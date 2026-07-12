@@ -1,7 +1,7 @@
 import { loadFixtureContext } from '../tasks/loader.js';
 import type { Task } from '../tasks/types.js';
 import { isEnoent, spawnCapture } from './spawn-utils.js';
-import { MissingBinaryError } from './types.js';
+import { MissingBinaryError, ProxyExecutionError } from './types.js';
 import type { AdapterResult, ProxyAdapter, ProxyName } from './types.js';
 
 const VERSION_PATTERN = /(\d+\.\d+\.\d+)/;
@@ -61,7 +61,12 @@ export abstract class BaseAdapter implements ProxyAdapter {
       throw new MissingBinaryError(this.name, this.binaryName, this.installCommand);
     }
 
-    const { stdout } = await spawnCapture(this.binaryName, this.compressArgs, context);
+    const { stdout, stderr, code } = await spawnCapture(this.binaryName, this.compressArgs, context);
+    if (code !== 0) {
+      // Do not treat a failed invocation's stdout (empty, partial, or an
+      // error message) as valid compressed output -- see ProxyExecutionError.
+      throw new ProxyExecutionError(this.name, this.binaryName, this.compressArgs, code, stderr);
+    }
     const proxyVersion = await this.getVersion();
     return { rawOutput: stdout, proxyVersion, durationMs: Date.now() - start };
   }
