@@ -127,6 +127,17 @@ export async function runVerify(options: VerifyOptions, deps: VerifyDependencies
     return { exitCode: 1 };
   }
 
+  if (options.live && availableAdapters.length > 1) {
+    print(
+      `Note: --live only verifies the first proxy (${availableAdapters[0]!.name}). ` +
+        `${availableAdapters
+          .slice(1)
+          .map((a) => a.name)
+          .join(', ')} will use the free local-tokenizer estimate only, not a real API call. ` +
+        `Run --proxy ${availableAdapters[1]?.name ?? '<name>'} --live separately to verify another proxy.`,
+    );
+  }
+
   const runId = generateRunId(now());
   const timestamp = now().toISOString();
 

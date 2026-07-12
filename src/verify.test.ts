@@ -160,6 +160,30 @@ describe('runVerify', () => {
       expect(liveApiClient).not.toHaveBeenCalled();
       expect(printed.some((line) => line.includes(LIVE_API_KEY_ENV_VAR))).toBe(true);
     });
+
+    it('--live with multiple --proxy flags: warns which proxies are NOT live-verified, still verifies the first', async () => {
+      const adapters: Record<string, FakeAdapter> = {
+        rtk: new FakeAdapter('rtk', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(60) }),
+        headroom: new FakeAdapter('headroom', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(40) }),
+      };
+      const liveApiClient = vi.fn(async (taskId: string): Promise<LiveApiCall> => ({ taskId, billedInputTokens: 42 }));
+      const outcome = await runVerify(
+        baseOptions({ proxies: ['rtk', 'headroom'], live: true, confirmCost: true, liveMaxTasks: 20 }),
+        baseDeps({
+          getAdapter: (name) => adapters[name]!,
+          liveApiClient,
+          env: { [LIVE_API_KEY_ENV_VAR]: 'sk-real-looking-key' },
+        }),
+      );
+
+      expect(outcome.exitCode).toBe(0);
+      expect(liveApiClient).toHaveBeenCalled();
+      expect(
+        printed.some(
+          (line) => line.includes('--live only verifies the first proxy (rtk)') && line.includes('headroom'),
+        ),
+      ).toBe(true);
+    });
   });
 
   describe('task schema errors', () => {
