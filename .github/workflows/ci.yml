@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-typecheck-test-audit:
+    name: lint -> typecheck -> test -> npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test (with coverage thresholds -- 80% overall, 95%+ on TT01-TT05)
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Security audit (no unfixed HIGH/CRITICAL CVEs)
+        run: npm run audit

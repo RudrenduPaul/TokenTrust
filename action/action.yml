@@ -1,0 +1,97 @@
+name: 'TokenTrust Verify'
+description: >-
+  Runs TokenTrust's token/context-reduction claims verification (TT01-TT05)
+  against your repo and fails the build on a detected version-drift
+  regression (TT05) -- catches a silent proxy regression the moment a
+  dependency is bumped, before it reaches production spend.
+author: 'TokenTrust contributors'
+
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  proxy:
+    description: >-
+      Proxy to verify. Repeatable by passing a space-separated list (e.g.
+      "rtk headroom lean-ctx") to run a cross-tool comparison (TT04).
+    required: true
+  repo:
+    description: 'Path to the repo to benchmark against. Defaults to the workflow checkout root.'
+    required: false
+    default: '.'
+  tasks:
+    description: >-
+      Path to a tokentrust-tasks.yml corpus. Defaults to the bundled 12-task
+      corpus shipped with TokenTrust when omitted.
+    required: false
+    default: ''
+  fail-on-regression:
+    description: >-
+      When "true", fails the workflow step if TT05 (version-drift regression
+      check) detects a regression against the last-verified baseline.
+    required: false
+    default: 'true'
+  node-version:
+    description: 'Node.js version to use for running the tokentrust CLI.'
+    required: false
+    default: '20'
+
+outputs:
+  report-path:
+    description: 'Path to the JSON report written by this run.'
+    value: ${{ steps.verify.outputs.report-path }}
+  tt05-pass:
+    description: '"true" if TT05 (version-drift) detected no regression, "false" otherwise.'
+    value: ${{ steps.verify.outputs.tt05-pass }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Run tokentrust verify
+      id: verify
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        PROXY_ARGS=()
+        for p in ${{ inputs.proxy }}; do
+          PROXY_ARGS+=(--proxy "$p")
+        done
+
+        TASKS_ARGS=()
+        if [ -n "${{ inputs.tasks }}" ]; then
+          TASKS_ARGS=(--tasks "${{ inputs.tasks }}")
+        fi
+
+        set +e
+        OUTPUT=$(npx --yes tokentrust verify "${PROXY_ARGS[@]}" --repo "${{ inputs.repo }}" "${TASKS_ARGS[@]}" --format json)
+        VERIFY_EXIT_CODE=$?
+        set -e
+
+        echo "$OUTPUT" > tokentrust-action-report.json
+        REPORT_PATH="$(pwd)/tokentrust-action-report.json"
+        echo "report-path=$REPORT_PATH" >> "$GITHUB_OUTPUT"
+
+        if [ "$VERIFY_EXIT_CODE" -ne 0 ]; then
+          echo "::error::tokentrust verify exited with code $VERIFY_EXIT_CODE -- see logs above."
+          exit "$VERIFY_EXIT_CODE"
+        fi
+
+        TT05_PASS=$(node -e "
+          const report = require('$REPORT_PATH');
+          const entries = Object.values(report.tt05 || {});
+          const allPass = entries.length === 0 || entries.every((e) => e.pass);
+          process.stdout.write(String(allPass));
+        ")
+        echo "tt05-pass=$TT05_PASS" >> "$GITHUB_OUTPUT"
+
+        if [ "${{ inputs.fail-on-regression }}" = "true" ] && [ "$TT05_PASS" != "true" ]; then
+          echo "::error::TokenTrust TT05 detected a version-drift regression against the last-verified baseline."
+          exit 1
+        fi
