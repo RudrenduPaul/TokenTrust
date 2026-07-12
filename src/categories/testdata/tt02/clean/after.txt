@@ -1,0 +1,1 @@
+Implement a background job reconciling inventory hourly, logging discrepancies over five percent to the dashboard.
