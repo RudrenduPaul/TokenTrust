@@ -33,7 +33,7 @@ src/
     testdata/<category>/clean|vulnerable   labeled fixtures per category
   report/                 JSON + terminal report writers
 fixtures/
-  tasks.yml               bundled default 12-task corpus
+  tasks.yml               bundled default 15-task corpus
   repos/                  one minimal fixture repo per bundled task
 action/
   action.yml               GitHub Action wrapper

@@ -49,7 +49,38 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - CI workflow (lint → typecheck → test → npm audit) and a tagged-release
   npm publish workflow.
 
+### Changed
+
+- `RtkAdapter` now invokes rtk's real CLI surface instead of an invented
+  `rtk compress --stdin` command that never existed on the real binary:
+  `rtk pipe --filter <name>` (stdin-based, for filter-tagged tasks) or
+  `rtk read -l aggressive <files>` (file-based, for the 12 original fixture
+  tasks), chosen per task. `BaseAdapter` gained an overridable
+  `buildCompressInvocation()` hook so each adapter can express this without
+  duplicating `run()`'s spawn/error-handling logic.
+- Task schema gained an additive, optional `filter` field
+  (`fixtures/tasks.yml` / `src/tasks/types.ts`) naming one of rtk's 18 real
+  `rtk pipe --filter` values. `loadFixtureContext()` now returns a filter
+  task's fixture content completely raw (no `--- path ---` header, no
+  `--- PROMPT ---` suffix) so the measured "before" and "after" text match
+  the literal shape a real `<tool> | rtk pipe --filter X` invocation sees.
+  Omitting `filter` keeps a task's previous file-based behavior unchanged.
+- Bundled default corpus grew from 12 to 15 tasks: three new filter-tagged
+  tasks (`verify-git-log-filter`, `verify-git-diff-filter`,
+  `verify-vitest-filter`) built from real captured `git log`, `git diff`,
+  and `vitest run` output from this repo's own history and test suite.
+- `--proxy headroom` is now intercepted in `runVerify()`'s dispatch loop,
+  before a `HeadroomAdapter` is ever constructed, and prints a documented
+  message explaining that headroom's real CLI surface is an HTTP proxy
+  server (`headroom proxy`), not a one-shot compression command, so it
+  cannot be driven by v0.1's subprocess-based harness. `--proxy headroom`
+  remains a recognized flag value; it just doesn't produce a verification
+  report yet. `--proxy rtk --proxy headroom` still verifies rtk and
+  produces a report -- only headroom is skipped.
+
 ### Notes
 
 - TT06 (telemetry/data-handling disclosure) and TT07 (hosted team
   budget/quota enforcement) are out of scope for v0.1.
+- headroom support (behind a real HTTP-proxy-traffic test harness) and
+  lean-ctx support are both out of scope for v0.1.

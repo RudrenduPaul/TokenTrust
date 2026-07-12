@@ -35,6 +35,24 @@ import { TaskSchemaError, loadFixtureContext, loadTaskCorpus } from './tasks/loa
 
 export class CliUsageError extends Error {}
 
+/**
+ * headroom's real CLI surface is an HTTP proxy server (`headroom proxy`),
+ * not a one-shot compression command -- v0.1's subprocess-based harness
+ * (spawn a binary, pipe stdin, read stdout) cannot drive it. This is
+ * printed and the proxy is skipped BEFORE a HeadroomAdapter is ever
+ * constructed, rather than letting a (nonexistent) compress invocation fail
+ * "naturally". `--proxy headroom` remains a recognized flag value
+ * (isSupportedProxy('headroom') stays true) -- it just doesn't produce a
+ * verification report yet. Support is planned for a future version behind
+ * a real HTTP-proxy-traffic test harness -- see CONTRIBUTING.md.
+ */
+export const HEADROOM_NOT_YET_SUPPORTED_MESSAGE =
+  "headroom is recognized but not yet supported for verification in TokenTrust v0.1: headroom's " +
+  'real CLI surface is an HTTP proxy server ("headroom proxy"), not a one-shot compression command, ' +
+  "so it cannot be driven by this version's subprocess-based harness (spawn a binary, pipe stdin, " +
+  'read stdout). Support is planned for a future version behind a real HTTP-proxy-traffic test ' +
+  'harness -- see CONTRIBUTING.md.';
+
 export interface VerifyOptions {
   proxies: ProxyName[];
   repo: string;
@@ -113,6 +131,10 @@ export async function runVerify(options: VerifyOptions, deps: VerifyDependencies
 
   const availableAdapters: ProxyAdapter[] = [];
   for (const proxyName of options.proxies) {
+    if (proxyName === 'headroom') {
+      print(HEADROOM_NOT_YET_SUPPORTED_MESSAGE);
+      continue;
+    }
     const adapter = getAdapterFn(proxyName);
     const installed = await adapter.isInstalled();
     if (!installed) {
