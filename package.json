@@ -1,0 +1,60 @@
+{
+  "name": "tokentrust",
+  "version": "0.1.0",
+  "description": "Vendor-neutral CLI that independently verifies the actual token/cost savings delivered by AI-coding-agent context-reduction proxies (rtk, headroom, lean-ctx) against a real, labeled task corpus and a local tokenizer.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "tokentrust": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "fixtures",
+    "action",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "audit": "npm audit --audit-level=high",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test:coverage && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RudrenduPaul/TokenTrust.git"
+  },
+  "keywords": [
+    "token-reduction",
+    "llm-cost",
+    "benchmark",
+    "cli",
+    "ai-coding-agent",
+    "verification"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/RudrenduPaul/TokenTrust/issues"
+  },
+  "homepage": "https://github.com/RudrenduPaul/TokenTrust#readme",
+  "dependencies": {
+    "js-tiktoken": "^1.0.21",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.7.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^4.1.10"
+  }
+}
