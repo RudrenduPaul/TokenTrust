@@ -26,6 +26,10 @@ export interface Tt04Result {
  * rule 4: a cross-tool comparison is only valid if every compared proxy ran
  * the exact same labeled tasks -- this throws rather than silently
  * comparing non-identical corpora.
+ *
+ * The `perProxyResults` this module ever receives are already pre-filtered
+ * by `runVerify()`'s dispatch loop, which excludes 'headroom' in v0.1 (see
+ * src/verify.ts) -- so no headroom-specific handling is needed here.
  */
 export function assertIdenticalCorpora(perProxyTaskIds: Array<{ proxy: ProxyName; taskIds: string[] }>): void {
   if (perProxyTaskIds.length < 2) return;
