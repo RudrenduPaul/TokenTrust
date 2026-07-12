@@ -1,0 +1,38 @@
+diff --git a/src/adapters/types.ts b/src/adapters/types.ts
+index a8d3f8f..a07d84a 100644
+--- a/src/adapters/types.ts
++++ b/src/adapters/types.ts
+@@ -37,3 +37,33 @@ export class MissingBinaryError extends Error {
+     this.installCommand = installCommand;
+   }
+ }
++
++/**
++ * Thrown when a proxy's compress command runs (the binary is on PATH and
++ * spawns) but exits non-zero. Before this existed, BaseAdapter.run() blindly
++ * trusted whatever came back on stdout -- even from a failed invocation --
++ * as the "compressed" text. A failed run (e.g. a rejected flag, a crash, a
++ * transient error) typically prints nothing or an error message to stdout,
++ * which the tokenizer then counts as near-zero tokens, making TT01 report
++ * an implausible ~100% reduction that reads as "even better than promised"
++ * when it is actually a broken measurement. Failing loudly here, instead of
++ * silently reporting that fabricated number, is what [redacted]
++ * Anti-Sycophancy Rule #1 requires ("never state a measured number without
++ * the command that produced it actually succeeding").
++ */
++export class ProxyExecutionError extends Error {
++  readonly proxyName: ProxyName;
++  readonly exitCode: number | null;
++
++  constructor(proxyName: ProxyName, binaryName: string, args: string[], exitCode: number | null, stderr: string) {
++    const codeLabel = exitCode === null ? 'was terminated by a signal' : `exited with code ${exitCode}`;
++    const stderrSuffix = stderr.trim() ? ` stderr: ${stderr.trim()}` : ' (no stderr output)';
++    super(
++      `${binaryName} ${args.join(' ')} ${codeLabel} instead of compressing successfully.${stderrSuffix} ` +
++        `Refusing to report a compression ratio computed from a failed ${binaryName} run.`,
++    );
++    this.name = 'ProxyExecutionError';
++    this.proxyName = proxyName;
++    this.exitCode = exitCode;
++  }
++}

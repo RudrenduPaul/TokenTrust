@@ -1,0 +1,10 @@
+3ad1776 Fix TT01 reporting an impossible ~100% reduction on a failed compress run
+2d35f72 Fix verify --help crashing with ERR_PARSE_ARGS_UNKNOWN_OPTION
+facd42f Fix arbitrary local file read via malicious tasks.yml fixture_repo
+8314d8d Warn when --live is combined with multiple --proxy flags
+752ee0e Add CI/publish workflows and GitHub Action wrapper
+eab8ce2 Add bundled default 12-task fixture corpus
+b42fdf6 Add TT01-TT05 verification categories with labeled clean/vulnerable testdata
+cae30c8 Add CLI entry point, ProxyAdapter implementations, tokenizer, task loader, and report writers
+f1d6fdf Add build/lint/test tooling config (tsc, eslint, vitest)
+26c70a2 Initial project scaffold: package config, docs, license

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Task } from '../tasks/types.js';
 import { MissingBinaryError, ProxyExecutionError } from './types.js';
+import type { ProxyName } from './types.js';
 
 const spawnCaptureMock = vi.fn();
 vi.mock('./spawn-utils.js', () => ({
@@ -12,14 +13,27 @@ vi.mock('./spawn-utils.js', () => ({
     typeof err === 'object' && err !== null && (err as { code?: string }).code === 'ENOENT',
 }));
 
-// Imported after the mock is registered so RtkAdapter (via BaseAdapter) picks up the mocked module.
-const { RtkAdapter } = await import('./rtk.js');
+// Imported after the mock is registered. A dedicated test-only subclass --
+// rather than one of the real adapters -- keeps these tests exercising
+// BaseAdapter's *default* buildCompressInvocation() hook (fixed compressArgs
+// over stdin), decoupled from any one real adapter's specific invocation
+// shape. RtkAdapter overrides that hook for its real dual pipe/read
+// invocation -- see rtk.test.ts for adapter-specific coverage of that.
+const { BaseAdapter } = await import('./base.js');
+
+class TestAdapter extends BaseAdapter {
+  readonly name: ProxyName = 'rtk';
+  readonly binaryName = 'rtk';
+  readonly installCommand = 'curl -fsSL https://rtk-ai.app/install.sh | sh  (or: cargo install rtk)';
+  protected readonly versionArgs = ['--version'];
+  protected readonly compressArgs = ['compress', '--stdin'];
+}
 
 function enoentError(): Error {
   return Object.assign(new Error('spawn rtk ENOENT'), { code: 'ENOENT' });
 }
 
-describe('BaseAdapter (exercised via RtkAdapter)', () => {
+describe('BaseAdapter (exercised via a test-only subclass)', () => {
   let dir: string;
   let task: Task;
 
@@ -44,19 +58,19 @@ describe('BaseAdapter (exercised via RtkAdapter)', () => {
 
   it('isInstalled() returns true when the version probe succeeds', async () => {
     spawnCaptureMock.mockResolvedValueOnce({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     await expect(adapter.isInstalled()).resolves.toBe(true);
   });
 
   it('isInstalled() returns false when the binary is missing (ENOENT)', async () => {
     spawnCaptureMock.mockRejectedValueOnce(enoentError());
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     await expect(adapter.isInstalled()).resolves.toBe(false);
   });
 
   it('getVersion() extracts a semver-looking version from stdout and caches it', async () => {
     spawnCaptureMock.mockResolvedValueOnce({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     await expect(adapter.getVersion()).resolves.toBe('2.4.1');
     await expect(adapter.getVersion()).resolves.toBe('2.4.1');
     expect(spawnCaptureMock).toHaveBeenCalledTimes(1); // cached on second call
@@ -64,19 +78,19 @@ describe('BaseAdapter (exercised via RtkAdapter)', () => {
 
   it('getVersion() falls back to "unknown" when stdout has no version-looking substring', async () => {
     spawnCaptureMock.mockResolvedValueOnce({ stdout: 'no version here', stderr: '', code: 0 });
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     await expect(adapter.getVersion()).resolves.toBe('unknown');
   });
 
   it('getVersion() returns "not-installed" when the binary is missing', async () => {
     spawnCaptureMock.mockRejectedValueOnce(enoentError());
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     await expect(adapter.getVersion()).resolves.toBe('not-installed');
   });
 
   it('run(baseline) returns the raw fixture context without invoking the compress command', async () => {
     spawnCaptureMock.mockResolvedValue({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     const result = await adapter.run(task, 'baseline');
     expect(result.rawOutput).toContain('const x = 1;');
     expect(result.rawOutput).toContain('do the thing');
@@ -86,14 +100,14 @@ describe('BaseAdapter (exercised via RtkAdapter)', () => {
     expect(spawnCaptureMock.mock.calls[0]?.[1]).toEqual(['--version']);
   });
 
-  it('run(compressed) spawns the compress command and returns its stdout', async () => {
+  it('run(compressed) spawns the default compressArgs over stdin and returns its stdout', async () => {
     spawnCaptureMock.mockImplementation((_bin: string, args: string[]) => {
       if (args[0] === 'compress') {
         return Promise.resolve({ stdout: 'compressed output', stderr: '', code: 0 });
       }
       return Promise.resolve({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
     });
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     const result = await adapter.run(task, 'compressed');
     expect(result.rawOutput).toBe('compressed output');
     expect(result.proxyVersion).toBe('2.4.1');
@@ -103,7 +117,7 @@ describe('BaseAdapter (exercised via RtkAdapter)', () => {
     'run(compressed) throws MissingBinaryError with the locked verbatim message when the binary is missing (CRITICAL)',
     async () => {
       spawnCaptureMock.mockRejectedValue(enoentError());
-      const adapter = new RtkAdapter();
+      const adapter = new TestAdapter();
       await expect(adapter.run(task, 'compressed')).rejects.toThrow(MissingBinaryError);
       await expect(adapter.run(task, 'compressed')).rejects.toThrow(
         'rtk not found on PATH. Install: curl -fsSL https://rtk-ai.app/install.sh | sh  (or: cargo install rtk). Then re-run this command.',
@@ -113,20 +127,16 @@ describe('BaseAdapter (exercised via RtkAdapter)', () => {
 
   it(
     'run(compressed) throws ProxyExecutionError instead of returning stdout when the compress command exits ' +
-      'non-zero (CRITICAL -- regression for the false ~100%-reduction bug: a failed rtk invocation must never ' +
+      'non-zero (CRITICAL -- regression for the false ~100%-reduction bug: a failed invocation must never ' +
       'be reported as a valid, implausibly-perfect compression result)',
     async () => {
       spawnCaptureMock.mockImplementation((_bin: string, args: string[]) => {
         if (args[0] === 'compress') {
-          // Simulates a real failure mode: the binary is on PATH and spawns,
-          // but rejects the invocation (bad flag, crash, etc.) and prints
-          // nothing useful to stdout -- exactly the shape that previously
-          // saturated TT01's reduction% to ~100.
           return Promise.resolve({ stdout: '', stderr: 'error: unrecognized argument --stdin', code: 2 });
         }
         return Promise.resolve({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
       });
-      const adapter = new RtkAdapter();
+      const adapter = new TestAdapter();
 
       await expect(adapter.run(task, 'compressed')).rejects.toThrow(ProxyExecutionError);
       await expect(adapter.run(task, 'compressed')).rejects.toThrow(
@@ -143,7 +153,7 @@ describe('BaseAdapter (exercised via RtkAdapter)', () => {
       }
       return Promise.resolve({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
     });
-    const adapter = new RtkAdapter();
+    const adapter = new TestAdapter();
     const result = await adapter.run(task, 'compressed');
     expect(result.rawOutput).toBe('genuinely compressed text');
   });
