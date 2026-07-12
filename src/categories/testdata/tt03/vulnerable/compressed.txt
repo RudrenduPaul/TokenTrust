@@ -1,0 +1,4 @@
+function calcTotal(i, d) {
+  const s = i.reduce((a, b) => a + b.price * b.qty, 0);
+  return s - s * (d / 100);
+}

@@ -1,0 +1,1 @@
+Implement a background job that reconciles inventory counts across every regional warehouse every hour, logging any discrepancy above a five percent threshold to the operations dashboard for manual review by the fulfillment team.

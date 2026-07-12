@@ -1,0 +1,13 @@
+{
+  "runs": [
+    {
+      "runId": "tt_2026-07-04_9a31be",
+      "timestamp": "2026-07-04T09:00:00.000Z",
+      "proxy": "rtk",
+      "proxyVersion": "2.3.9",
+      "repo": "/fixtures/repo",
+      "measuredSavingsPct": 41.0,
+      "priorRunId": null
+    }
+  ]
+}
