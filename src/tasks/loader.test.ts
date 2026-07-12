@@ -24,7 +24,7 @@ describe('loadTaskCorpus', () => {
   it('loads the bundled default corpus successfully', () => {
     const bundledPath = join(process.cwd(), 'fixtures', 'tasks.yml');
     const tasks = loadTaskCorpus(bundledPath);
-    expect(tasks.length).toBe(12);
+    expect(tasks.length).toBe(15);
     expect(tasks.every((t) => t.fixtureRepoAbsolutePath.length > 0)).toBe(true);
   });
 
@@ -101,6 +101,37 @@ tasks:
     type: not-a-real-type
 `);
     expect(() => loadTaskCorpus(path)).toThrow(/type/);
+  });
+
+  it('accepts a valid filter value', () => {
+    mkdirSync(join(dir, 'repos', 't1'), { recursive: true });
+    const path = writeCorpus(`
+version: 1
+tasks:
+  - id: t1
+    description: "d"
+    fixture_repo: ./repos/t1
+    prompt: "p"
+    difficulty: easy
+    filter: git-log
+`);
+    const tasks = loadTaskCorpus(path);
+    expect(tasks[0]!.filter).toBe('git-log');
+  });
+
+  it('rejects an invalid filter value', () => {
+    mkdirSync(join(dir, 'repos', 't1'), { recursive: true });
+    const path = writeCorpus(`
+version: 1
+tasks:
+  - id: t1
+    description: "d"
+    fixture_repo: ./repos/t1
+    prompt: "p"
+    difficulty: easy
+    filter: not-a-real-filter
+`);
+    expect(() => loadTaskCorpus(path)).toThrow(/filter/);
   });
 
   it('rejects duplicate task ids', () => {
@@ -243,5 +274,45 @@ describe('loadFixtureContext', () => {
     expect(context).toContain('const visible = true;');
     expect(context).not.toContain('ignored');
     expect(context).not.toContain('secret');
+  });
+
+  it('filter task: returns fixture content completely raw, with no path header and no PROMPT suffix', () => {
+    mkdirSync(join(dir, 'repo'), { recursive: true });
+    writeFileSync(join(dir, 'repo', 'captured-output.txt'), 'raw\tcaptured\ncontent\n', 'utf8');
+
+    const task = {
+      id: 't1',
+      description: 'd',
+      fixture_repo: './repo',
+      prompt: 'This prompt text must not appear in the output',
+      difficulty: 'easy' as const,
+      filter: 'git-log' as const,
+      fixtureRepoAbsolutePath: join(dir, 'repo'),
+    };
+
+    const context = loadFixtureContext(task);
+    expect(context).toBe('raw\tcaptured\ncontent\n');
+    expect(context).not.toContain('--- captured-output.txt ---');
+    expect(context).not.toContain('--- PROMPT ---');
+    expect(context).not.toContain('This prompt text must not appear in the output');
+  });
+
+  it('non-filter task (regression guard): still gets the old concatenated-with-headers-and-prompt behavior', () => {
+    mkdirSync(join(dir, 'repo'), { recursive: true });
+    writeFileSync(join(dir, 'repo', 'a.js'), 'const a = 1;', 'utf8');
+
+    const task = {
+      id: 't1',
+      description: 'd',
+      fixture_repo: './repo',
+      prompt: 'Do the thing',
+      difficulty: 'easy' as const,
+      fixtureRepoAbsolutePath: join(dir, 'repo'),
+    };
+
+    const context = loadFixtureContext(task);
+    expect(context).toContain('--- a.js ---');
+    expect(context).toContain('--- PROMPT ---');
+    expect(context).toContain('Do the thing');
   });
 });

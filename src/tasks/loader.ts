@@ -1,10 +1,30 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve, relative, sep } from 'node:path';
 import { parse } from 'yaml';
-import type { Task, TaskCorpus, TaskDefinition } from './types.js';
+import type { RtkFilter, Task, TaskCorpus, TaskDefinition } from './types.js';
 
 const VALID_DIFFICULTIES = new Set(['easy', 'medium', 'hard']);
 const VALID_TYPES = new Set(['bugfix', 'refactor', 'docstring', 'feature-add']);
+const VALID_FILTERS = new Set<string>([
+  'cargo-test',
+  'pytest',
+  'go-test',
+  'go-build',
+  'tsc',
+  'vitest',
+  'prettier',
+  'grep',
+  'rg',
+  'find',
+  'fd',
+  'git-log',
+  'git-diff',
+  'git-status',
+  'log',
+  'mypy',
+  'ruff-check',
+  'ruff-format',
+]);
 const REQUIRED_FIELDS = ['id', 'description', 'fixture_repo', 'prompt', 'difficulty'] as const;
 
 export class TaskSchemaError extends Error {
@@ -140,6 +160,13 @@ function validateTask(task: unknown, sourcePath: string): asserts task is TaskDe
       );
     }
   }
+  if (obj.filter !== undefined && !VALID_FILTERS.has(obj.filter as RtkFilter)) {
+    throw new TaskSchemaError(
+      `Task "${obj.id as string}" in "${sourcePath}" has invalid filter "${
+        obj.filter as RtkFilter
+      }" -- must be one of: ${[...VALID_FILTERS].join(', ')}.`,
+    );
+  }
 }
 
 function pathExists(path: string): boolean {
@@ -154,12 +181,25 @@ function pathExists(path: string): boolean {
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.tokentrust']);
 
 /**
- * Builds the raw context blob a coding agent would see for this task: every
- * file in the fixture repo concatenated with a path header, followed by the
- * task prompt. This is the "before" text passed to a proxy adapter's
- * baseline and compressed runs (see src/adapters/*.ts).
+ * Builds the raw context blob a coding agent (or, for filter tasks, a
+ * real `<tool> | rtk pipe --filter X` invocation) would see for this
+ * task.
+ *
+ * Filter tasks (task.filter set): returns the fixture repo's captured
+ * content completely raw and unmodified -- no `--- path ---` header, no
+ * `--- PROMPT ---` suffix -- because that is the literal shape a real
+ * piped-stdin invocation receives, and both the baseline token count and
+ * the compressed-input token count must measure that identical real
+ * shape for the reduction% to mean anything.
+ *
+ * Non-filter tasks (unchanged behavior): every file in the fixture repo
+ * concatenated with a path header, followed by the task prompt.
  */
 export function loadFixtureContext(task: Task): string {
+  if (task.filter) {
+    const files = listFilesRecursive(task.fixtureRepoAbsolutePath);
+    return files.map((filePath) => readFileSync(filePath, 'utf8')).join('');
+  }
   const files = listFilesRecursive(task.fixtureRepoAbsolutePath);
   const sections = files.map((filePath) => {
     const relPath = relative(task.fixtureRepoAbsolutePath, filePath);
@@ -170,7 +210,7 @@ export function loadFixtureContext(task: Task): string {
   return sections.join('\n\n');
 }
 
-function listFilesRecursive(dir: string): string[] {
+export function listFilesRecursive(dir: string): string[] {
   const entries = readdirSync(dir, { withFileTypes: true });
   const files: string[] = [];
   for (const entry of entries) {

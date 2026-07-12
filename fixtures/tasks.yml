@@ -1,10 +1,14 @@
 # TokenTrust bundled default task corpus (v0.1).
 #
 # This is what makes `npx tokentrust verify --proxy rtk` work with zero other
-# flags -- see the champion-tier TTHW decision in the devex review. 12 tasks,
+# flags -- see the champion-tier TTHW decision in the devex review. 15 tasks,
 # varying difficulty (easy/medium/hard) and task type (bugfix/refactor/
 # docstring/feature-add), each pointing at a small, real fixture repo under
-# fixtures/repos/<task-id>/ -- not synthetic placeholder text.
+# fixtures/repos/<task-id>/ -- not synthetic placeholder text. 3 of the 15
+# are filter-tagged tasks that measure rtk's real `rtk pipe --filter`
+# stdin-based invocation against real captured tool output (git log, git
+# diff, vitest run); the other 12 stay file-based (`rtk read -l aggressive`)
+# exactly as before.
 #
 # Schema (locked, eng-review resolution (a)): version, tasks[].id,
 # description, fixture_repo, prompt, difficulty are required. `type` and
@@ -112,3 +116,24 @@ tasks:
     type: bugfix
     quality_markers:
       - "function attachResizeHandler"
+
+  - id: verify-git-log-filter
+    description: "Measure rtk's real `rtk pipe --filter git-log` invocation against real captured git log output"
+    fixture_repo: ./repos/verify-git-log-filter
+    prompt: "Summarize the recent commit history shown in this git log output."
+    difficulty: easy
+    filter: git-log
+
+  - id: verify-git-diff-filter
+    description: "Measure rtk's real `rtk pipe --filter git-diff` invocation against a real captured git diff"
+    fixture_repo: ./repos/verify-git-diff-filter
+    prompt: "Review this diff and summarize what changed and why."
+    difficulty: medium
+    filter: git-diff
+
+  - id: verify-vitest-filter
+    description: "Measure rtk's real `rtk pipe --filter vitest` invocation against real captured vitest test output"
+    fixture_repo: ./repos/verify-vitest-filter
+    prompt: "Report whether the test suite passed and summarize the results."
+    difficulty: easy
+    filter: vitest
