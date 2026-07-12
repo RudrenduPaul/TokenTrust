@@ -6,7 +6,7 @@ import type { LiveApiCall } from './categories/tt02_cost_delta.js';
 import { LIVE_API_KEY_ENV_VAR } from './categories/tt02_cost_delta.js';
 import { FakeAdapter } from './test-support/fake-adapter.js';
 import { ProxyExecutionError } from './adapters/types.js';
-import type { ProxyAdapter, AdapterResult } from './adapters/types.js';
+import type { ProxyAdapter, AdapterResult, ProxyName } from './adapters/types.js';
 import type { Task } from './tasks/types.js';
 import { resolveDefaultTasksPath, runVerify } from './verify.js';
 import type { VerifyDependencies, VerifyOptions } from './verify.js';
@@ -50,12 +50,12 @@ describe('runVerify', () => {
     };
   }
 
-  describe('cold-start: bundled default 12-task corpus with zero extra flags (E2E)', () => {
+  describe('cold-start: bundled default 15-task corpus with zero extra flags (E2E)', () => {
     it('produces a full report and prints the champion-tier terminal summary', async () => {
       const outcome = await runVerify(baseOptions(), baseDeps());
 
       expect(outcome.exitCode).toBe(0);
-      expect(outcome.report?.task_corpus_size).toBe(12);
+      expect(outcome.report?.task_corpus_size).toBe(15);
       expect(outcome.report?.records.length).toBeGreaterThan(0);
       expect(printed.some((line) => line.includes('Measuring...'))).toBe(true);
       expect(printed.some((line) => line.includes('TokenTrust v0.1'))).toBe(true);
@@ -65,15 +65,15 @@ describe('runVerify', () => {
     it('runs a cross-tool comparison (TT04) when more than one proxy is requested', async () => {
       const adapters: Record<string, FakeAdapter> = {
         rtk: new FakeAdapter('rtk', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(60) }),
-        headroom: new FakeAdapter('headroom', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(40) }),
+        'lean-ctx': new FakeAdapter('lean-ctx', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(40) }),
       };
       const outcome = await runVerify(
-        baseOptions({ proxies: ['rtk', 'headroom'] }),
+        baseOptions({ proxies: ['rtk', 'lean-ctx'] }),
         baseDeps({ getAdapter: (name) => adapters[name]! }),
       );
       expect(outcome.exitCode).toBe(0);
       const tt04Records = outcome.report?.records.filter((r) => r.category === 'TT04') ?? [];
-      expect(tt04Records.map((r) => r.proxy).sort()).toEqual(['headroom', 'rtk']);
+      expect(tt04Records.map((r) => r.proxy).sort()).toEqual(['lean-ctx', 'rtk']);
     });
   });
 
@@ -129,7 +129,7 @@ describe('runVerify', () => {
 
     it('--live --confirm-cost but task count exceeds --live-max-tasks: exits 1, makes ZERO API calls', async () => {
       const liveApiClient = vi.fn();
-      // Bundled corpus has 12 tasks; cap of 5 forces the over-cap refusal path.
+      // Bundled corpus has 15 tasks; cap of 5 forces the over-cap refusal path.
       const outcome = await runVerify(
         baseOptions({ live: true, confirmCost: true, liveMaxTasks: 5 }),
         baseDeps({ liveApiClient, env: { [LIVE_API_KEY_ENV_VAR]: 'sk-should-not-be-used' } }),
@@ -167,11 +167,11 @@ describe('runVerify', () => {
     it('--live with multiple --proxy flags: warns which proxies are NOT live-verified, still verifies the first', async () => {
       const adapters: Record<string, FakeAdapter> = {
         rtk: new FakeAdapter('rtk', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(60) }),
-        headroom: new FakeAdapter('headroom', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(40) }),
+        'lean-ctx': new FakeAdapter('lean-ctx', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(40) }),
       };
       const liveApiClient = vi.fn(async (taskId: string): Promise<LiveApiCall> => ({ taskId, billedInputTokens: 42 }));
       const outcome = await runVerify(
-        baseOptions({ proxies: ['rtk', 'headroom'], live: true, confirmCost: true, liveMaxTasks: 20 }),
+        baseOptions({ proxies: ['rtk', 'lean-ctx'], live: true, confirmCost: true, liveMaxTasks: 20 }),
         baseDeps({
           getAdapter: (name) => adapters[name]!,
           liveApiClient,
@@ -183,7 +183,7 @@ describe('runVerify', () => {
       expect(liveApiClient).toHaveBeenCalled();
       expect(
         printed.some(
-          (line) => line.includes('--live only verifies the first proxy (rtk)') && line.includes('headroom'),
+          (line) => line.includes('--live only verifies the first proxy (rtk)') && line.includes('lean-ctx'),
         ),
       ).toBe(true);
     });
@@ -300,6 +300,37 @@ describe('runVerify', () => {
       const jsonLine = printed.find((line) => line.trim().startsWith('{'));
       expect(jsonLine).toBeDefined();
       expect(() => JSON.parse(jsonLine!)).not.toThrow();
+    });
+  });
+
+  describe('headroom: v0.1 CLI-level not-yet-supported gate (Decision 2)', () => {
+    it('--proxy headroom alone: exits 1 with the documented message, never constructs the headroom adapter', async () => {
+      const getAdapter = vi.fn((name: ProxyName) =>
+        new FakeAdapter(name, { baseline: () => '', compressed: () => '' }),
+      );
+      const outcome = await runVerify(baseOptions({ proxies: ['headroom'] }), baseDeps({ getAdapter }));
+
+      expect(outcome.exitCode).toBe(1);
+      expect(outcome.report).toBeUndefined();
+      expect(getAdapter).not.toHaveBeenCalledWith('headroom');
+      expect(printed.some((line) => line.includes('HTTP proxy server') && line.toLowerCase().includes('not yet'))).toBe(
+        true,
+      );
+    });
+
+    it('--proxy rtk --proxy headroom: rtk still verifies and produces a report; headroom prints its message but does not block', async () => {
+      const getAdapter = vi.fn((name: ProxyName) =>
+        name === 'rtk'
+          ? new FakeAdapter('rtk', { baseline: () => 'token '.repeat(50), compressed: () => 'token '.repeat(20) })
+          : new FakeAdapter(name, { baseline: () => '', compressed: () => '' }),
+      );
+      const outcome = await runVerify(baseOptions({ proxies: ['rtk', 'headroom'] }), baseDeps({ getAdapter }));
+
+      expect(outcome.exitCode).toBe(0);
+      expect(outcome.report).toBeDefined();
+      expect(outcome.report?.proxies).toEqual(['rtk']);
+      expect(getAdapter).not.toHaveBeenCalledWith('headroom');
+      expect(printed.some((line) => line.toLowerCase().includes('not yet'))).toBe(true);
     });
   });
 });

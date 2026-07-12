@@ -9,6 +9,10 @@ import type { ProxyAdapter, ProxyName } from './types.js';
  * that a config-driven/dynamic-loading N-proxy plugin system would be
  * premature abstraction at this scope (3 known targets, not 30). Adding a
  * 4th proxy means adding one file and one line here, per CONTRIBUTING.md.
+ *
+ * `getAdapter('headroom')` below still constructs a real HeadroomAdapter if
+ * called directly, but `runVerify()`'s v0.1 dispatch loop never actually
+ * calls it -- see src/verify.ts / src/adapters/headroom.ts.
  */
 const FACTORIES: Record<ProxyName, () => ProxyAdapter> = {
   rtk: () => new RtkAdapter(),
