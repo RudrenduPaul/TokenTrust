@@ -122,6 +122,34 @@ tasks:
     expect(() => loadTaskCorpus(path)).toThrow(/Duplicate task id/);
   });
 
+  it('CRITICAL: rejects an absolute fixture_repo path (arbitrary local file read)', () => {
+    const path = writeCorpus(`
+version: 1
+tasks:
+  - id: t1
+    description: "desc"
+    fixture_repo: /etc
+    prompt: "do the thing"
+    difficulty: easy
+`);
+    expect(() => loadTaskCorpus(path)).toThrow(TaskSchemaError);
+    expect(() => loadTaskCorpus(path)).toThrow(/absolute fixture_repo path/);
+  });
+
+  it('CRITICAL: rejects a fixture_repo that path-traverses outside the corpus directory', () => {
+    const path = writeCorpus(`
+version: 1
+tasks:
+  - id: t1
+    description: "desc"
+    fixture_repo: ../../../../../../etc
+    prompt: "do the thing"
+    difficulty: easy
+`);
+    expect(() => loadTaskCorpus(path)).toThrow(TaskSchemaError);
+    expect(() => loadTaskCorpus(path)).toThrow(/escapes the corpus file's own directory/);
+  });
+
   it('rejects a task pointing at a non-existent fixture_repo', () => {
     const path = writeCorpus(`
 version: 1
