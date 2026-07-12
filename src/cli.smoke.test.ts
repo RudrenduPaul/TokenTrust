@@ -57,7 +57,6 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
     }
   });
 
-
   it('prints a usage error and exits 1 when --proxy is omitted', () => {
     let stderr = '';
     let exitCode = 0;
@@ -143,5 +142,4 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
       rmSync(linkPath, { force: true });
     }
   });
-
 });
