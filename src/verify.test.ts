@@ -55,7 +55,7 @@ describe('runVerify', () => {
       const outcome = await runVerify(baseOptions(), baseDeps());
 
       expect(outcome.exitCode).toBe(0);
-      expect(outcome.report?.task_corpus_size).toBe(15);
+      expect(outcome.report?.task_corpus_size).toBe(23);
       expect(outcome.report?.records.length).toBeGreaterThan(0);
       expect(printed.some((line) => line.includes('Measuring...'))).toBe(true);
       expect(printed.some((line) => line.includes('TokenTrust v0.1'))).toBe(true);
@@ -143,7 +143,7 @@ describe('runVerify', () => {
     it('--live --confirm-cost within the cap and API key present: proceeds and calls the live API client', async () => {
       const liveApiClient = vi.fn(async (taskId: string): Promise<LiveApiCall> => ({ taskId, billedInputTokens: 42 }));
       const outcome = await runVerify(
-        baseOptions({ live: true, confirmCost: true, liveMaxTasks: 20 }),
+        baseOptions({ live: true, confirmCost: true, liveMaxTasks: 25 }),
         baseDeps({ liveApiClient, env: { [LIVE_API_KEY_ENV_VAR]: 'sk-real-looking-key' } }),
       );
 
@@ -155,7 +155,7 @@ describe('runVerify', () => {
     it('--live --confirm-cost within cap but NO API key set: exits 1, makes ZERO API calls', async () => {
       const liveApiClient = vi.fn();
       const outcome = await runVerify(
-        baseOptions({ live: true, confirmCost: true, liveMaxTasks: 20 }),
+        baseOptions({ live: true, confirmCost: true, liveMaxTasks: 25 }),
         baseDeps({ liveApiClient, env: {} }),
       );
 
@@ -171,7 +171,7 @@ describe('runVerify', () => {
       };
       const liveApiClient = vi.fn(async (taskId: string): Promise<LiveApiCall> => ({ taskId, billedInputTokens: 42 }));
       const outcome = await runVerify(
-        baseOptions({ proxies: ['rtk', 'lean-ctx'], live: true, confirmCost: true, liveMaxTasks: 20 }),
+        baseOptions({ proxies: ['rtk', 'lean-ctx'], live: true, confirmCost: true, liveMaxTasks: 25 }),
         baseDeps({
           getAdapter: (name) => adapters[name]!,
           liveApiClient,
