@@ -1,0 +1,114 @@
+# TokenTrust bundled default task corpus (v0.1).
+#
+# This is what makes `npx tokentrust verify --proxy rtk` work with zero other
+# flags -- see the champion-tier TTHW decision in the devex review. 12 tasks,
+# varying difficulty (easy/medium/hard) and task type (bugfix/refactor/
+# docstring/feature-add), each pointing at a small, real fixture repo under
+# fixtures/repos/<task-id>/ -- not synthetic placeholder text.
+#
+# Schema (locked, eng-review resolution (a)): version, tasks[].id,
+# description, fixture_repo, prompt, difficulty are required. `type` and
+# `quality_markers` are additive optional fields (see CONTRIBUTING.md).
+version: 1
+tasks:
+  - id: fix-typo-docstring
+    description: "Fix a one-word typo in a function's docstring"
+    fixture_repo: ./repos/fix-typo-docstring
+    prompt: "Fix the typo in the docstring for calculateTotal() in cart.js -- it says 'discunt' instead of 'discount'."
+    difficulty: easy
+    type: docstring
+    quality_markers:
+      - "function calculateTotal"
+
+  - id: fix-off-by-one-loop
+    description: "Fix an off-by-one error in a loop that skips the last item in an array"
+    fixture_repo: ./repos/fix-off-by-one-loop
+    prompt: "sumRange() in range.js drops the last element of the array. Fix the loop bound."
+    difficulty: easy
+    type: bugfix
+    quality_markers:
+      - "function sumRange"
+
+  - id: add-null-check-validator
+    description: "Add a missing null/undefined check to a validator that crashes on empty input"
+    fixture_repo: ./repos/add-null-check-validator
+    prompt: "validateEmail() in validator.js throws when passed null or undefined instead of returning false. Add the missing guard."
+    difficulty: medium
+    type: bugfix
+    quality_markers:
+      - "function validateEmail"
+
+  - id: refactor-split-utils
+    description: "Split a module mixing string and date helpers into two cohesive files"
+    fixture_repo: ./repos/refactor-split-utils
+    prompt: "Refactor utils.js into separate string-helpers.js and date-helpers.js modules, keeping the same exported function names."
+    difficulty: hard
+    type: refactor
+
+  - id: refactor-extract-service
+    description: "Extract inline business logic from a route handler into a reusable service function"
+    fixture_repo: ./repos/refactor-extract-service
+    prompt: "The pricing calculation inline in the /checkout route handler in routes.js should be extracted into a calculatePricing() function in a new pricing-service.js file."
+    difficulty: medium
+    type: refactor
+    quality_markers:
+      - "calculatePricing"
+
+  - id: add-rate-limiter-feature
+    description: "Add a simple in-memory rate limiter middleware to an HTTP handler"
+    fixture_repo: ./repos/add-rate-limiter-feature
+    prompt: "Add a rateLimit(maxRequests, windowMs) middleware function to server.js that rejects requests over the limit with a 429 status."
+    difficulty: hard
+    type: feature-add
+
+  - id: add-retry-wrapper-feature
+    description: "Add a retry-with-backoff wrapper around an unreliable network call"
+    fixture_repo: ./repos/add-retry-wrapper-feature
+    prompt: "Add a withRetry(fn, maxAttempts) helper in fetch-client.js that retries fetchData() up to maxAttempts times with exponential backoff on failure."
+    difficulty: medium
+    type: feature-add
+    quality_markers:
+      - "function withRetry"
+
+  - id: fix-async-race-condition
+    description: "Fix a race condition where concurrent increments of a shared counter lose updates"
+    fixture_repo: ./repos/fix-async-race-condition
+    prompt: "incrementCounter() in counter.js loses updates under concurrent calls because of a read-then-write race. Fix it so concurrent calls never lose an increment."
+    difficulty: hard
+    type: bugfix
+    quality_markers:
+      - "function incrementCounter"
+
+  - id: docstring-add-jsdoc-class
+    description: "Add JSDoc comments to an undocumented class's public methods"
+    fixture_repo: ./repos/docstring-add-jsdoc-class
+    prompt: "Add JSDoc comments describing parameters and return values for every public method on the ShoppingCart class in cart-model.js."
+    difficulty: easy
+    type: docstring
+    quality_markers:
+      - "class ShoppingCart"
+
+  - id: refactor-rename-inconsistent-vars
+    description: "Rename inconsistently-cased variable names to a single consistent convention"
+    fixture_repo: ./repos/refactor-rename-inconsistent-vars
+    prompt: "config.js mixes snake_case and camelCase for the same kind of value. Rename every variable to camelCase, keeping behavior identical."
+    difficulty: easy
+    type: refactor
+
+  - id: add-cli-flag-feature
+    description: "Add a new boolean CLI flag to a small hand-rolled argument parser"
+    fixture_repo: ./repos/add-cli-flag-feature
+    prompt: "Add a --verbose boolean flag to parseArgs() in args.js that sets result.verbose = true when present."
+    difficulty: easy
+    type: feature-add
+    quality_markers:
+      - "function parseArgs"
+
+  - id: fix-memory-leak-listener
+    description: "Fix an event listener that is added on every call but never removed"
+    fixture_repo: ./repos/fix-memory-leak-listener
+    prompt: "attachResizeHandler() in resize-watcher.js adds a new 'resize' listener every time it's called without removing the previous one. Fix the leak."
+    difficulty: medium
+    type: bugfix
+    quality_markers:
+      - "function attachResizeHandler"
