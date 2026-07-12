@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Task } from '../tasks/types.js';
-import { MissingBinaryError } from './types.js';
+import { MissingBinaryError, ProxyExecutionError } from './types.js';
 
 const spawnCaptureMock = vi.fn();
 vi.mock('./spawn-utils.js', () => ({
@@ -110,4 +110,41 @@ describe('BaseAdapter (exercised via RtkAdapter)', () => {
       );
     },
   );
+
+  it(
+    'run(compressed) throws ProxyExecutionError instead of returning stdout when the compress command exits ' +
+      'non-zero (CRITICAL -- regression for the false ~100%-reduction bug: a failed rtk invocation must never ' +
+      'be reported as a valid, implausibly-perfect compression result)',
+    async () => {
+      spawnCaptureMock.mockImplementation((_bin: string, args: string[]) => {
+        if (args[0] === 'compress') {
+          // Simulates a real failure mode: the binary is on PATH and spawns,
+          // but rejects the invocation (bad flag, crash, etc.) and prints
+          // nothing useful to stdout -- exactly the shape that previously
+          // saturated TT01's reduction% to ~100.
+          return Promise.resolve({ stdout: '', stderr: 'error: unrecognized argument --stdin', code: 2 });
+        }
+        return Promise.resolve({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
+      });
+      const adapter = new RtkAdapter();
+
+      await expect(adapter.run(task, 'compressed')).rejects.toThrow(ProxyExecutionError);
+      await expect(adapter.run(task, 'compressed')).rejects.toThrow(
+        /exited with code 2 instead of compressing successfully/,
+      );
+      await expect(adapter.run(task, 'compressed')).rejects.toThrow(/unrecognized argument --stdin/);
+    },
+  );
+
+  it('run(compressed) does not throw and returns stdout when the compress command exits 0', async () => {
+    spawnCaptureMock.mockImplementation((_bin: string, args: string[]) => {
+      if (args[0] === 'compress') {
+        return Promise.resolve({ stdout: 'genuinely compressed text', stderr: '', code: 0 });
+      }
+      return Promise.resolve({ stdout: 'rtk 2.4.1', stderr: '', code: 0 });
+    });
+    const adapter = new RtkAdapter();
+    const result = await adapter.run(task, 'compressed');
+    expect(result.rawOutput).toBe('genuinely compressed text');
+  });
 });

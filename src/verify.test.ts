@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LiveApiCall } from './categories/tt02_cost_delta.js';
 import { LIVE_API_KEY_ENV_VAR } from './categories/tt02_cost_delta.js';
 import { FakeAdapter } from './test-support/fake-adapter.js';
+import { ProxyExecutionError } from './adapters/types.js';
+import type { ProxyAdapter, AdapterResult } from './adapters/types.js';
+import type { Task } from './tasks/types.js';
 import { resolveDefaultTasksPath, runVerify } from './verify.js';
 import type { VerifyDependencies, VerifyOptions } from './verify.js';
 
@@ -185,6 +188,100 @@ describe('runVerify', () => {
       ).toBe(true);
     });
   });
+
+  describe(
+    'CRITICAL: proxy execution failure path (regression -- a failed compress invocation must never be ' +
+      'reported as an implausible ~100% reduction)',
+    () => {
+      it('exits 1 with a readable error and produces NO report when the compress command fails', async () => {
+        class FailingCompressAdapter implements ProxyAdapter {
+          readonly name = 'rtk' as const;
+          readonly binaryName = 'rtk';
+          readonly installCommand = 'echo install';
+          async isInstalled(): Promise<boolean> {
+            return true;
+          }
+          async getVersion(): Promise<string> {
+            return '2.4.1';
+          }
+          async run(task: Task, mode: 'compressed' | 'baseline'): Promise<AdapterResult> {
+            if (mode === 'baseline') {
+              return { rawOutput: 'token '.repeat(50), proxyVersion: '2.4.1', durationMs: 1 };
+            }
+            throw new ProxyExecutionError('rtk', 'rtk', ['compress', '--stdin'], 2, 'unrecognized argument --stdin');
+          }
+        }
+
+        const outcome = await runVerify(baseOptions(), baseDeps({ getAdapter: () => new FailingCompressAdapter() }));
+
+        expect(outcome.exitCode).toBe(1);
+        expect(outcome.report).toBeUndefined();
+        expect(printed.some((line) => line.startsWith('Error:') && line.includes('exited with code 2'))).toBe(true);
+        // No printed line should contain a fabricated 100%-style reduction summary.
+        expect(printed.some((line) => line.includes('TokenTrust v0.1'))).toBe(false);
+      });
+    },
+  );
+
+  describe(
+    'CRITICAL: proxy execution failure surfaced from TT03 (never-worse guard also must not swallow a ' +
+      'failed compress invocation)',
+    () => {
+      it('exits 1 with a readable error when TT03 (not TT01) is the call that hits the failing compress command', async () => {
+        const tasksPath = join(repoDir, 'one-task.yml');
+        writeFileSync(
+          tasksPath,
+          [
+            'version: 1',
+            'tasks:',
+            '  - id: has-markers',
+            '    description: "d"',
+            '    fixture_repo: .',
+            '    prompt: "p"',
+            '    difficulty: easy',
+            '    quality_markers:',
+            '      - "marker"',
+          ].join('\n'),
+          'utf8',
+        );
+
+        let compressedCalls = 0;
+        class TransientlyFailingAdapter implements ProxyAdapter {
+          readonly name = 'rtk' as const;
+          readonly binaryName = 'rtk';
+          readonly installCommand = 'echo install';
+          async isInstalled(): Promise<boolean> {
+            return true;
+          }
+          async getVersion(): Promise<string> {
+            return '2.4.1';
+          }
+          async run(task: Task, mode: 'compressed' | 'baseline'): Promise<AdapterResult> {
+            if (mode === 'baseline') {
+              return { rawOutput: 'token '.repeat(50), proxyVersion: '2.4.1', durationMs: 1 };
+            }
+            compressedCalls += 1;
+            // First compressed call is TT01's -- let it succeed so TT01/TT02
+            // complete normally. TT03's compressed call (triggered by this
+            // task's quality_markers) is the one that fails.
+            if (compressedCalls === 1) {
+              return { rawOutput: 'token '.repeat(20), proxyVersion: '2.4.1', durationMs: 1 };
+            }
+            throw new ProxyExecutionError('rtk', 'rtk', ['compress', '--stdin'], 1, 'transient failure');
+          }
+        }
+
+        const outcome = await runVerify(
+          baseOptions({ tasksPath }),
+          baseDeps({ getAdapter: () => new TransientlyFailingAdapter() }),
+        );
+
+        expect(outcome.exitCode).toBe(1);
+        expect(outcome.report).toBeUndefined();
+        expect(printed.some((line) => line.startsWith('Error:') && line.includes('transient failure'))).toBe(true);
+      });
+    },
+  );
 
   describe('task schema errors', () => {
     it('exits 1 with a readable error when the task corpus file is invalid', async () => {

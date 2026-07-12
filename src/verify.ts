@@ -1,7 +1,7 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAdapter as defaultGetAdapter } from './adapters/registry.js';
-import { MissingBinaryError } from './adapters/types.js';
+import { MissingBinaryError, ProxyExecutionError } from './adapters/types.js';
 import type { ProxyAdapter, ProxyName } from './adapters/types.js';
 import { getClaimedSavings } from './categories/claims.js';
 import { anthropicLiveApiClient } from './categories/live-api-client.js';
@@ -162,7 +162,16 @@ export async function runVerify(options: VerifyOptions, deps: VerifyDependencies
     print(`Measuring... (${adapter.name} ${proxyVersion}, ${tasks.length}-task corpus, ${options.repo})`);
 
     const claimed = getClaimedSavings(adapter.name);
-    const tt01 = await runTt01(adapter, tasks, claimed.pct, (done, total) => printProgress(done, total));
+    let tt01: Tt01Result;
+    try {
+      tt01 = await runTt01(adapter, tasks, claimed.pct, (done, total) => printProgress(done, total));
+    } catch (err) {
+      if (err instanceof ProxyExecutionError) {
+        print(`Error: ${err.message}`);
+        return { exitCode: 1 };
+      }
+      throw err;
+    }
     tt01ResultsByProxy.push({ proxy: adapter.name, tt01 });
 
     const tt02 = runTt02Default(tt01.perTask, claimed.pct);
@@ -208,7 +217,16 @@ export async function runVerify(options: VerifyOptions, deps: VerifyDependencies
         `compressed $${compressedLive.billedUsd.toFixed(4)}) vs. local-tokenizer estimate ${tt02.savingsPct.toFixed(1)}%.`;
     }
 
-    const tt03 = await runTt03(adapter, tasks, (done, total) => printProgress(done, total));
+    let tt03: Awaited<ReturnType<typeof runTt03>>;
+    try {
+      tt03 = await runTt03(adapter, tasks, (done, total) => printProgress(done, total));
+    } catch (err) {
+      if (err instanceof ProxyExecutionError) {
+        print(`Error: ${err.message}`);
+        return { exitCode: 1 };
+      }
+      throw err;
+    }
     tt03Entries[adapter.name] = {
       pass: tt03.pass,
       regressed_count: tt03.regressedCount,
