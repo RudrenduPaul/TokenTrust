@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, isAbsolute, join, resolve, relative } from 'node:path';
+import { dirname, isAbsolute, join, resolve, relative, sep } from 'node:path';
 import { parse } from 'yaml';
 import type { Task, TaskCorpus, TaskDefinition } from './types.js';
 
@@ -56,9 +56,25 @@ export function loadTaskCorpus(corpusPath: string): Task[] {
     }
     seenIds.add(task.id);
 
-    const fixtureRepoAbsolutePath = isAbsolute(task.fixture_repo)
-      ? task.fixture_repo
-      : resolve(corpusDir, task.fixture_repo);
+    if (isAbsolute(task.fixture_repo)) {
+      throw new TaskSchemaError(
+        `Task "${task.id}" in "${absoluteCorpusPath}" has an absolute fixture_repo path ` +
+          `("${task.fixture_repo}") -- fixture_repo must be relative to the corpus file's own ` +
+          `directory. A task corpus can read arbitrary local files this way (e.g. ~/.ssh), which ` +
+          `is unsafe for a tasks.yml downloaded from an untrusted source.`,
+      );
+    }
+
+    const fixtureRepoAbsolutePath = resolve(corpusDir, task.fixture_repo);
+    const relativeFromCorpusDir = relative(corpusDir, fixtureRepoAbsolutePath);
+
+    if (relativeFromCorpusDir === '..' || relativeFromCorpusDir.startsWith(`..${sep}`) || isAbsolute(relativeFromCorpusDir)) {
+      throw new TaskSchemaError(
+        `Task "${task.id}" in "${absoluteCorpusPath}" has a fixture_repo path ` +
+          `("${task.fixture_repo}") that escapes the corpus file's own directory ` +
+          `("${corpusDir}") -- fixture_repo must stay within the directory the tasks.yml file lives in.`,
+      );
+    }
 
     if (!pathExists(fixtureRepoAbsolutePath)) {
       throw new TaskSchemaError(
