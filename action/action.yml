@@ -49,28 +49,33 @@ runs:
   using: 'composite'
   steps:
     - name: Set up Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: ${{ inputs.node-version }}
 
     - name: Run tokentrust verify
       id: verify
       shell: bash
+      env:
+        TT_PROXY: ${{ inputs.proxy }}
+        TT_TASKS: ${{ inputs.tasks }}
+        TT_REPO: ${{ inputs.repo }}
+        TT_FAIL_ON_REGRESSION: ${{ inputs.fail-on-regression }}
       run: |
         set -euo pipefail
 
         PROXY_ARGS=()
-        for p in ${{ inputs.proxy }}; do
+        for p in $TT_PROXY; do
           PROXY_ARGS+=(--proxy "$p")
         done
 
         TASKS_ARGS=()
-        if [ -n "${{ inputs.tasks }}" ]; then
-          TASKS_ARGS=(--tasks "${{ inputs.tasks }}")
+        if [ -n "$TT_TASKS" ]; then
+          TASKS_ARGS=(--tasks "$TT_TASKS")
         fi
 
         set +e
-        OUTPUT=$(npx --yes tokentrust verify "${PROXY_ARGS[@]}" --repo "${{ inputs.repo }}" "${TASKS_ARGS[@]}" --format json)
+        OUTPUT=$(npx --yes tokentrust verify "${PROXY_ARGS[@]}" --repo "$TT_REPO" "${TASKS_ARGS[@]}" --format json)
         VERIFY_EXIT_CODE=$?
         set -e
 
@@ -83,15 +88,15 @@ runs:
           exit "$VERIFY_EXIT_CODE"
         fi
 
-        TT05_PASS=$(node -e "
-          const report = require('$REPORT_PATH');
+        TT05_PASS=$(REPORT_PATH="$REPORT_PATH" node -e "
+          const report = require(process.env.REPORT_PATH);
           const entries = Object.values(report.tt05 || {});
           const allPass = entries.length === 0 || entries.every((e) => e.pass);
           process.stdout.write(String(allPass));
         ")
         echo "tt05-pass=$TT05_PASS" >> "$GITHUB_OUTPUT"
 
-        if [ "${{ inputs.fail-on-regression }}" = "true" ] && [ "$TT05_PASS" != "true" ]; then
+        if [ "$TT_FAIL_ON_REGRESSION" = "true" ] && [ "$TT05_PASS" != "true" ]; then
           echo "::error::TokenTrust TT05 detected a version-drift regression against the last-verified baseline."
           exit 1
         fi
