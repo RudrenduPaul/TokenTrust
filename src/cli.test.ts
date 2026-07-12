@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCliFlags, resolveVerifyOptions } from './cli.js';
+import { main, parseCliFlags, resolveVerifyOptions } from './cli.js';
 import { CliUsageError } from './verify.js';
 
 describe('parseCliFlags', () => {
@@ -84,3 +84,32 @@ describe('resolveVerifyOptions', () => {
     expect(options.format).toBe('json');
   });
 });
+
+describe(
+  'main() --help handling (regression -- node:util parseArgs is strict by default and throws ' +
+    'ERR_PARSE_ARGS_UNKNOWN_OPTION on any flag not declared in its options schema, including --help/-h; ' +
+    'these must be intercepted before parseArgs ever sees them)',
+  () => {
+    it('tokentrust --help exits 0 and prints top-level usage instead of throwing', async () => {
+      const exitCode = await main(['--help']);
+      expect(exitCode).toBe(0);
+    });
+
+    it('tokentrust -h exits 0 (short flag)', async () => {
+      const exitCode = await main(['-h']);
+      expect(exitCode).toBe(0);
+    });
+
+    it('tokentrust verify --help exits 0 and does not throw ERR_PARSE_ARGS_UNKNOWN_OPTION', async () => {
+      await expect(main(['verify', '--help'])).resolves.toBe(0);
+    });
+
+    it('tokentrust verify -h exits 0 (short flag)', async () => {
+      await expect(main(['verify', '-h'])).resolves.toBe(0);
+    });
+
+    it('tokentrust verify --proxy rtk --help exits 0 even with other flags present', async () => {
+      await expect(main(['verify', '--proxy', 'rtk', '--help'])).resolves.toBe(0);
+    });
+  },
+);
