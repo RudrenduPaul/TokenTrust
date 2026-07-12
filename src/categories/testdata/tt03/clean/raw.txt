@@ -1,0 +1,11 @@
+/**
+ * Calculate the total price for a cart, applying a percentage discount.
+ *
+ * @param {Array<{price: number, qty: number}>} items - The cart items.
+ * @param {number} discountPct - The discount percentage to apply (0-100).
+ * @returns {number} The discounted total.
+ */
+function calculateTotal(items, discountPct) {
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  return subtotal - subtotal * (discountPct / 100);
+}

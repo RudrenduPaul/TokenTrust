@@ -1,0 +1,6 @@
+[WARN] connection attempt failed: ECONNREFUSED 127.0.0.1:5432
+[WARN] connection attempt failed: ECONNREFUSED 127.0.0.1:5432
+[WARN] connection attempt failed: ECONNREFUSED 127.0.0.1:5432
+[WARN] connection attempt failed: ECONNREFUSED 127.0.0.1:5432
+[WARN] connection attempt failed: ECONNREFUSED 127.0.0.1:5432
+[INFO] retry loop finished after 5 attempts

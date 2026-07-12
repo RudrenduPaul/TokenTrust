@@ -1,0 +1,5 @@
+# verify-go-build-filter
+./main.go:5:2: "os" imported and not used
+./main.go:10:2: declared and not used: unused
+./main.go:19:2: declared and not used: x
+./main.go:20:2: declared and not used: y

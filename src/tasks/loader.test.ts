@@ -24,7 +24,7 @@ describe('loadTaskCorpus', () => {
   it('loads the bundled default corpus successfully', () => {
     const bundledPath = join(process.cwd(), 'fixtures', 'tasks.yml');
     const tasks = loadTaskCorpus(bundledPath);
-    expect(tasks.length).toBe(15);
+    expect(tasks.length).toBe(23);
     expect(tasks.every((t) => t.fixtureRepoAbsolutePath.length > 0)).toBe(true);
   });
 
