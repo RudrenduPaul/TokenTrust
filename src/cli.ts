@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
+import { realpathSync } from 'node:fs';
 import { isSupportedProxy, SUPPORTED_PROXIES } from './adapters/registry.js';
 import type { ProxyName } from './adapters/types.js';
 import { DEFAULT_LIVE_MAX_TASKS_OPTION, CliUsageError, resolveDefaultTasksPath, runVerify } from './verify.js';
@@ -178,7 +179,16 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   return outcome.exitCode;
 }
 
-const isMainModule = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+function resolveIsMainModule(): boolean {
+  if (process.argv[1] === undefined) return false;
+  if (import.meta.url === pathToFileURL(process.argv[1]).href) return true;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+  } catch {
+    return false;
+  }
+}
+const isMainModule = resolveIsMainModule();
 if (isMainModule) {
   main().then((exitCode) => {
     process.exitCode = exitCode;
