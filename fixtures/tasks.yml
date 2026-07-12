@@ -1,14 +1,14 @@
 # TokenTrust bundled default task corpus (v0.1).
 #
-# This is what makes `npx tokentrust verify --proxy rtk` work with zero other
-# flags -- see the champion-tier TTHW decision in the [redacted]. 15 tasks,
+# flags -- see the champion-tier TTHW decision in the [redacted]. 23 tasks,
 # varying difficulty (easy/medium/hard) and task type (bugfix/refactor/
 # docstring/feature-add), each pointing at a small, real fixture repo under
-# fixtures/repos/<task-id>/ -- not synthetic placeholder text. 3 of the 15
+# fixtures/repos/<task-id>/ -- not synthetic placeholder text. 9 of the 23
 # are filter-tagged tasks that measure rtk's real `rtk pipe --filter`
 # stdin-based invocation against real captured tool output (git log, git
-# diff, vitest run); the other 12 stay file-based (`rtk read -l aggressive`)
-# exactly as before.
+# diff, vitest run, go-test, go-build, tsc, grep, find, git-status, log,
+# pytest); the other 12 stay file-based (`rtk read -l aggressive`) exactly
+# as before.
 #
 # Schema (locked, [redacted] resolution (a)): version, tasks[].id,
 # description, fixture_repo, prompt, difficulty are required. `type` and
@@ -123,6 +123,9 @@ tasks:
     prompt: "Summarize the recent commit history shown in this git log output."
     difficulty: easy
     filter: git-log
+    quality_markers:
+      - "853240f"
+      - "Fix GitHub Actions script injection"
 
   - id: verify-git-diff-filter
     description: "Measure rtk's real `rtk pipe --filter git-diff` invocation against a real captured git diff"
@@ -130,6 +133,9 @@ tasks:
     prompt: "Review this diff and summarize what changed and why."
     difficulty: medium
     filter: git-diff
+    quality_markers:
+      - "MissingBinaryError"
+      - "BaseAdapter.run()"
 
   - id: verify-vitest-filter
     description: "Measure rtk's real `rtk pipe --filter vitest` invocation against real captured vitest test output"
@@ -137,3 +143,84 @@ tasks:
     prompt: "Report whether the test suite passed and summarize the results."
     difficulty: easy
     filter: vitest
+    quality_markers:
+      - "PASS (5)"
+      - "FAIL (0)"
+
+  - id: verify-pytest-filter
+    description: "Measure rtk's real `rtk pipe --filter pytest` invocation against real captured pytest output (2 passed, 1 failed)"
+    fixture_repo: ./repos/verify-pytest-filter
+    prompt: "Report whether the test suite passed and explain any failure."
+    difficulty: easy
+    filter: pytest
+    quality_markers:
+      - "ValueError: percent must be between 0 and 100"
+      - "test_apply_discount_negative_percent_raises"
+
+  - id: verify-go-test-filter
+    description: "Measure rtk's real `rtk pipe --filter go-test` invocation against real captured `go test -json` output (2 passed, 1 failed)"
+    fixture_repo: ./repos/verify-go-test-filter
+    prompt: "Report whether the test suite passed and explain any failure."
+    difficulty: easy
+    filter: go-test
+    quality_markers:
+      - "TestMultiplyNegative"
+      - "want -7"
+
+  - id: verify-go-build-filter
+    description: "Measure rtk's real `rtk pipe --filter go-build` invocation against a real captured Go compile error"
+    fixture_repo: ./repos/verify-go-build-filter
+    prompt: "Report whether the build succeeded and explain any error."
+    difficulty: easy
+    filter: go-build
+    quality_markers:
+      - "declared and not used"
+      - "\"os\" imported and not used"
+
+  - id: verify-tsc-filter
+    description: "Measure rtk's real `rtk pipe --filter tsc` invocation against a real captured TypeScript type error"
+    fixture_repo: ./repos/verify-tsc-filter
+    prompt: "Report whether the type check passed and explain any error."
+    difficulty: easy
+    filter: tsc
+    quality_markers:
+      - "TS2322"
+      - "calculator.ts(18,3)"
+
+  - id: verify-grep-filter
+    description: "Measure rtk's real `rtk pipe --filter grep` invocation against real captured `grep -rn TODO` output"
+    fixture_repo: ./repos/verify-grep-filter
+    prompt: "List the TODO comments found and where they are."
+    difficulty: easy
+    filter: grep
+    quality_markers:
+      - "add case-insensitive matching"
+      - "src/order-service.js"
+
+  - id: verify-find-filter
+    description: "Measure rtk's real `rtk pipe --filter find` invocation against real captured `find -name *.js` output"
+    fixture_repo: ./repos/verify-find-filter
+    prompt: "List the JS files found."
+    difficulty: easy
+    filter: find
+    quality_markers:
+      - "src/utils/format.js"
+
+  - id: verify-git-status-filter
+    description: "Measure rtk's real `rtk pipe --filter git-status` invocation against real captured `git status` output (staged + unstaged changes)"
+    fixture_repo: ./repos/verify-git-status-filter
+    prompt: "Summarize what's staged and what's still unstaged."
+    difficulty: easy
+    filter: git-status
+    quality_markers:
+      - "new file:   config.js"
+      - "modified:   app.js"
+
+  - id: verify-log-filter
+    description: "Measure rtk's real `rtk pipe --filter log` invocation against real captured, genuinely duplicated application log output"
+    fixture_repo: ./repos/verify-log-filter
+    prompt: "Summarize what happened in this log output."
+    difficulty: easy
+    filter: log
+    quality_markers:
+      - "ECONNREFUSED 127.0.0.1:5432"

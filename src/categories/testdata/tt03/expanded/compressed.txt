@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "grep_wrapper.py", line 42, in run
+    result = subprocess.run(["grep", "-rn", pattern, path], capture_output=True)
+  File "grep_wrapper.py", line 58, in run
+    raise RuntimeError("grep fallback triggered: falling back to raw scan of every file")
+RuntimeError: grep fallback triggered: falling back to raw scan of every file
+3 matches
