@@ -1,6 +1,7 @@
 import { execFileSync, execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 // Regression coverage for a real bug caught during the build pass: comparing
@@ -20,7 +21,7 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
     }
   }, 60_000);
 
-  it('actually runs when invoked as `node dist/cli.js` and exits non-zero (proves real subprocess execution)', () => {
+  it('actually runs when invoked as `node dist/cli.js` (proves real subprocess execution, not a no-op)', () => {
     let stdout = '';
     let exitCode = 0;
     try {
@@ -33,23 +34,30 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
       stdout = e.stdout;
     }
 
-    // This assertion is deliberately environment-agnostic: on a machine with
-    // no rtk binary on PATH (CI, most dev machines), the missing-binary path
-    // fires. On a machine that happens to have a real rtk binary installed,
-    // rtk's actual CLI has no generic "compress arbitrary stdin text"
-    // command matching what this adapter invokes, so the compress command
-    // exits non-zero and ProxyExecutionError fires instead (see
-    // src/adapters/base.ts) -- this is the exact real-world path that
-    // reproduced a false ~100%-reduction bug found during manual
-    // end-to-end testing of the compiled CLI, before that fix.
-    // Either way, exit code 1 with a real, non-empty error message proves
-    // the CLI actually executed end-to-end rather than silently no-op'ing.
-    expect(exitCode).toBe(1);
-    expect(
-      stdout.includes('not found on PATH. Install:') ||
-        stdout.includes('Refusing to report a compression ratio computed from a failed rtk run'),
-    ).toBe(true);
+    // Environment-agnostic across three real outcomes for `--proxy rtk`:
+    // (a) no rtk binary on PATH -> missing-binary message, exit 1;
+    // (b) rtk installed but its compress invocation fails for some other
+    //     reason -> ProxyExecutionError message, exit 1 (this was the exact
+    //     path that reproduced a false ~100%-reduction bug found during
+    //     manual end-to-end testing of the compiled CLI, before that fix,
+    //     and predates the rtk adapter rewrite below);
+    // (c) rtk installed and the adapter's real `pipe --filter` / `read -l
+    //     aggressive` invocation succeeds -> a real TT01 report prints and
+    //     the process exits 0. All three prove the CLI actually executed
+    //     end-to-end rather than silently no-op'ing (the no-op failure mode
+    //     prints nothing and exits 0 with empty stdout, which none of these
+    //     three branches allow).
+    const missingBinary = stdout.includes('not found on PATH. Install:');
+    const compressFailed = stdout.includes('Refusing to report a compression ratio computed from a failed rtk run');
+    const realReport = exitCode === 0 && stdout.includes('TT01 Compression Ratio');
+    expect(missingBinary || compressFailed || realReport).toBe(true);
+    if (realReport) {
+      expect(exitCode).toBe(0);
+    } else {
+      expect(exitCode).toBe(1);
+    }
   });
+
 
   it('prints a usage error and exits 1 when --proxy is omitted', () => {
     let stderr = '';
@@ -112,4 +120,30 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
     expect(stdout).toContain('verify');
     expect(stderr).not.toContain('ERR_PARSE_ARGS_UNKNOWN_OPTION');
   });
+
+  it('runs correctly when invoked through a symlink whose target differs from process.argv[1] (regression: import.meta.url canonicalizes to the symlink target, so a naive pathToFileURL(process.argv[1]) comparison silently no-ops)', () => {
+    const linkPath = join(tmpdir(), `tokentrust-cli-symlink-test-${process.pid}.mjs`);
+    try {
+      symlinkSync(distCliPath, linkPath);
+    } catch {
+      return; // symlinks unsupported in this environment (e.g. some Windows CI runners) -- skip rather than fail
+    }
+    try {
+      let stdout = '';
+      let exitCode = 0;
+      try {
+        stdout = execFileSync(process.execPath, [linkPath, '--help'], { encoding: 'utf8' });
+      } catch (err) {
+        const e = err as { status: number; stdout: string };
+        exitCode = e.status;
+        stdout = e.stdout;
+      }
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('tokentrust');
+      expect(stdout.length).toBeGreaterThan(0);
+    } finally {
+      rmSync(linkPath, { force: true });
+    }
+  });
+
 });
