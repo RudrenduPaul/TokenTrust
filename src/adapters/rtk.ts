@@ -1,4 +1,7 @@
+import { listFilesRecursive } from '../tasks/loader.js';
+import type { Task } from '../tasks/types.js';
 import { BaseAdapter } from './base.js';
+import type { CompressInvocation } from './base.js';
 import type { ProxyName } from './types.js';
 
 /**
@@ -6,11 +9,31 @@ import type { ProxyName } from './types.js';
  * dependencies with TokenTrust itself) -- invoked as an external process
  * rather than imported as a library, since there is no JS/TS binding for
  * it and shelling out is simpler and more reliable than writing one.
+ *
+ * rtk has no generic "compress arbitrary stdin" command. Its real CLI
+ * surface (confirmed against the installed rtk 0.43.0 binary) is:
+ *   - `rtk pipe --filter <name>`: reads stdin, applies a named filter tuned
+ *     to a specific dev-tool's real output shape (git-diff, vitest, etc.),
+ *     prints filtered output. Used for tasks with `task.filter` set.
+ *   - `rtk read -l aggressive <files>`: real language-aware file
+ *     compression, given real file paths. Used for the original file-based
+ *     fixture tasks (no `filter` set).
  */
 export class RtkAdapter extends BaseAdapter {
   readonly name: ProxyName = 'rtk';
   readonly binaryName = 'rtk';
   readonly installCommand = 'curl -fsSL https://rtk-ai.app/install.sh | sh  (or: cargo install rtk)';
   protected readonly versionArgs = ['--version'];
-  protected readonly compressArgs = ['compress', '--stdin'];
+  // Unused -- see buildCompressInvocation() below, which always supplies
+  // the real args for whichever of rtk's two real commands applies to the
+  // task at hand. Kept only to satisfy BaseAdapter's abstract member.
+  protected readonly compressArgs: string[] = [];
+
+  protected override buildCompressInvocation(task: Task, context: string): CompressInvocation {
+    if (task.filter) {
+      return { args: ['pipe', '--filter', task.filter], input: context };
+    }
+    const files = listFilesRecursive(task.fixtureRepoAbsolutePath);
+    return { args: ['read', '-l', 'aggressive', ...files] };
+  }
 }
