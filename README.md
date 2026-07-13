@@ -2,11 +2,9 @@
 
 <!-- TODO: record a real terminal demo GIF and drop it here.
      Capture script (run for real, on camera, no fabricated output):
-       1. `git clone https://github.com/RudrenduPaul/TokenTrust.git && cd TokenTrust`
-       2. `npm install && npm run build`
-       3. `node dist/cli.js verify --proxy rtk` -- let the full 23-task run play out,
+       1. `npx tokentrust verify --proxy rtk` -- let the full 23-task run play out,
           keep the [MEASURED] TT01/TT02 lines and the final summary line on screen.
-       4. Target 15-20 seconds, terminal width 100 cols, asciinema or a plain screen
+       2. Target 15-20 seconds, terminal width 100 cols, asciinema or a plain screen
           recording converted to GIF. Save as `docs/demo.gif` and reference it below
           with descriptive alt text once it exists. -->
 <!-- <img src="docs/demo.gif" alt="Terminal recording of tokentrust verify --proxy rtk printing claimed vs. measured token and cost savings for rtk 0.43.0 across a 23-task corpus" width="640"> -->
@@ -19,31 +17,23 @@ task corpus instead of trusting the maintainer's own number.
 
 [![CI](https://github.com/RudrenduPaul/TokenTrust/actions/workflows/ci.yml/badge.svg)](https://github.com/RudrenduPaul/TokenTrust/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
-[![npm](https://img.shields.io/badge/npm-not%20yet%20published-lightgrey.svg)](#install)
+[![npm](https://img.shields.io/npm/v/tokentrust.svg)](https://www.npmjs.com/package/tokentrust)
 
 </div>
 
 ## Install
 
-npm publishing is in progress (an `NPM_TOKEN` repo secret is being wired up right now so the
-GitHub Actions publish workflow can ship it), so `npx tokentrust` isn't live yet. Until it is,
-install from source, this is the exact sequence verified working against a clean clone:
-
 ```sh
-git clone https://github.com/RudrenduPaul/TokenTrust.git
-cd TokenTrust
-npm install
-npm run build
-node dist/cli.js verify --proxy rtk
+npx tokentrust verify --proxy rtk
 ```
 
-Once the npm package is live, this collapses to `npx tokentrust verify --proxy rtk` with no
-clone required. This README gets updated the same day that happens.
+No clone, no local build. `npx` fetches the published package and runs it directly. To install
+it as a dependency instead: `npm install -g tokentrust`.
 
 Real output from that exact command, run against the bundled 23-task corpus:
 
 ```
-$ node dist/cli.js verify --proxy rtk
+$ npx tokentrust verify --proxy rtk
 
 TokenTrust v0.1 -- Token/Context-Reduction Claims Verification
 Proxy: rtk 0.43.0 | Repo: TokenTrust | Task corpus: 23 labeled tasks
@@ -67,8 +57,8 @@ Proxy: rtk 0.43.0 | Repo: TokenTrust | Task corpus: 23 labeled tasks
 Summary: 77.0% measured cost savings (claimed: up to 70%) -- see full report
 ```
 
-That's a real run against a genuinely fresh clone, not a hand-typed example. Clone the repo and
-it reproduces on your machine.
+That's a real run's output, not a hand-typed example -- `npx tokentrust` invokes the exact same
+`dist/cli.js` entry point, so it reproduces on your machine with no clone required.
 
 ## Table of contents
 
