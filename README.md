@@ -1,115 +1,249 @@
+<div align="center">
+
+<!-- TODO: record a real terminal demo GIF and drop it here.
+     Capture script (run for real, on camera, no fabricated output):
+       1. `git clone https://github.com/RudrenduPaul/TokenTrust.git && cd TokenTrust`
+       2. `npm install && npm run build`
+       3. `node dist/cli.js verify --proxy rtk` -- let the full 23-task run play out,
+          keep the [MEASURED] TT01/TT02 lines and the final summary line on screen.
+       4. Target 15-20 seconds, terminal width 100 cols, asciinema or a plain screen
+          recording converted to GIF. Save as `docs/demo.gif` and reference it below
+          with descriptive alt text once it exists. -->
+<!-- <img src="docs/demo.gif" alt="Terminal recording of tokentrust verify --proxy rtk printing claimed vs. measured token and cost savings for rtk 0.43.0 across a 23-task corpus" width="640"> -->
+
 # TokenTrust
 
-Vendor-neutral CLI that independently verifies the actual token and cost savings
-delivered by AI-coding-agent context-reduction proxies, against a real, labeled
-task corpus and a local tokenizer. It runs the proxy for real, measures what
-actually happened, and puts the claimed number next to the measured one.
+Vendor-neutral CLI that independently verifies the token and cost savings AI-coding-agent
+context-reduction proxies actually deliver, by running the proxy for real against a labeled
+task corpus instead of trusting the maintainer's own number.
+
+[![CI](https://github.com/RudrenduPaul/TokenTrust/actions/workflows/ci.yml/badge.svg)](https://github.com/RudrenduPaul/TokenTrust/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
+[![npm](https://img.shields.io/badge/npm-not%20yet%20published-lightgrey.svg)](#install)
+
+</div>
+
+## Install
+
+npm publishing is in progress (an `NPM_TOKEN` repo secret is being wired up right now so the
+GitHub Actions publish workflow can ship it), so `npx tokentrust` isn't live yet. Until it is,
+install from source, this is the exact sequence verified working against a clean clone:
+
+```sh
+git clone https://github.com/RudrenduPaul/TokenTrust.git
+cd TokenTrust
+npm install
+npm run build
+node dist/cli.js verify --proxy rtk
+```
+
+Once the npm package is live, this collapses to `npx tokentrust verify --proxy rtk` with no
+clone required. This README gets updated the same day that happens.
+
+Real output from that exact command, run against the bundled 23-task corpus:
 
 ```
-$ npx tokentrust verify --proxy rtk
+$ node dist/cli.js verify --proxy rtk
 
 TokenTrust v0.1 -- Token/Context-Reduction Claims Verification
-Proxy: rtk 0.43.0 | Task corpus: 15 labeled tasks
+Proxy: rtk 0.43.0 | Repo: TokenTrust | Task corpus: 23 labeled tasks
 
 [MEASURED] TT01 Compression Ratio
   Claimed (rtk README): up to 70% context reduction
-  Measured (this corpus): 76.2% average reduction across 15 tasks
-  Range: 3.8% ("verify-git-diff-filter") to 94.7% ("docstring-add-jsdoc-class")
+  Measured (this repo, this corpus): 60.7% average reduction across 23 tasks
+  Range: 0.0% ("verify-go-build-filter") to 95.4% ("verify-git-log-filter")
 
 [MEASURED] TT02 Cost-Savings Delta
-  Actual savings: 68.1% -- vs. claimed 70% ceiling
+  Baseline (uncompressed): $0.02 across 23 tasks @ claude-5-sonnet pricing
+  Compressed (rtk-proxied): $0.00 across 23 tasks
+  Actual savings: 77.0% ($0.01) -- vs. claimed 70% ceiling
 
 [FAIL]  TT03 Never-Worse Output Guard
-  2/15 tasks regressed in task-completion diff vs. uncompressed baseline
+  2/23 tasks regressed in task-completion diff vs. uncompressed baseline
 
 [PASS]  TT05 Version-Drift Regression Check
-  No regression vs. last-verified rtk 0.43.0 baseline
+  No prior verified baseline for rtk on this repo -- this run establishes the first baseline.
+
+Summary: 77.0% measured cost savings (claimed: up to 70%) -- see full report
 ```
 
-That's a real run against the bundled fixture corpus, not a hand-typed example.
-Run it yourself and it reproduces.
+That's a real run against a genuinely fresh clone, not a hand-typed example. Clone the repo and
+it reproduces on your machine.
+
+## Table of contents
+
+- [Why this exists](#why-this-exists)
+- [What it measures](#what-it-measures)
+- [Commands](#commands)
+- [Proxy support](#proxy-support-v01)
+- [How it compares](#how-it-compares)
+- [What is TokenTrust, and why does it exist](#what-is-tokentrust-and-why-does-it-exist)
+- [FAQ](#faq)
+- [Real-world validation](#real-world-validation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Why this exists
 
-Context-reduction proxies (`rtk`, `headroom`, and others) publish compression and
-cost-savings numbers in their own READMEs. Those numbers come from the maintainer's
-own benchmark, on the maintainer's own workload, with no outside check. That's not
-an accusation. It's just how every proxy in this space currently reports its own
-numbers, and a maintainer benchmarking their own tool isn't running an adversarial
-test.
+Context-reduction proxies (`rtk`, `headroom`, `lean-ctx`, and others) publish compression and
+cost-savings numbers in their own READMEs. Those numbers come from the maintainer's own
+benchmark, on the maintainer's own workload, with nobody outside the project checking the math.
+That's not an accusation. It's just how every proxy in this space currently reports its own
+numbers, and a maintainer benchmarking their own tool isn't running an adversarial test.
 
-The gap is visible in the proxies' own issue trackers:
+The gap shows up in the proxies' own issue trackers:
 
-- [`rtk#839`](https://github.com/rtk-ai/rtk/issues/839): an open thread where users
-  ran their own benchmarks and got materially different numbers than the README claims.
-- [`rtk#1935`](https://github.com/rtk-ai/rtk/issues/1935): "rtk gain hallucinates
-  savings numbers" (filed 2026-05-18, open).
-- [`rtk#582`](https://github.com/rtk-ai/rtk/issues/582): a cost-savings number that
-  regressed silently across a version bump, with no test catching it. TT05 exists
+- [`rtk#839`](https://github.com/rtk-ai/rtk/issues/839), an open, 5-repo, 2,100-measurement
+  empirical benchmark thread asking how rtk's actual savings compare to what it claims.
+- [`rtk#1935`](https://github.com/rtk-ai/rtk/issues/1935), "rtk gain hallucinates massive
+  token usage and savings" (open).
+- [`rtk#582`](https://github.com/rtk-ai/rtk/issues/582), "RTK Hook Increases Claude Code Costs
+  by 18%," a cost regression a maintainer's own test suite didn't catch on its own. TT05 exists
   specifically to catch this class of regression before a user does.
 
-TokenTrust doesn't compete with these proxies. It verifies them. It has no stake in
-whether a proxy's claimed number is accurate, and every category run prints the
-claimed number next to the measured one, so the comparison is never hidden or
-averaged away.
+TokenTrust doesn't compete with these proxies. It verifies them. It has no stake in whether a
+proxy's claimed number holds up, and every category run prints the claimed number right next to
+the measured one, so the comparison is never hidden or averaged away.
 
-## How it compares
+We also found and fixed a bug in our own measurement: one fixture's baseline had accidentally
+been captured with `git log --oneline` instead of a true raw `git log`, which understated rtk's
+real compression on that task by roughly 42 percentage points. Recapturing it honestly is why
+`verify-git-log-filter` now measures 95.4%, the highest reduction in the corpus, and a real one.
+[Commit e42246c](https://github.com/RudrenduPaul/TokenTrust/commit/e42246c) has the fix --
+no measurement number ships without a fixture-run behind it.
 
-| | What it does | Ongoing / self-serve | Installable | Independently verifies claims |
-|---|---|---|---|---|
-| **TokenTrust** | Runs a proxy against a labeled task corpus, measures real compression/cost/quality, prints claimed vs. measured | Yes, runs in your own CI, on your own repo, every time | Yes (`npx tokentrust`) | Yes, is the whole point |
-| [tokbench](https://github.com/Entelligentsia/tokbench) | Independent benchmark of `rtk`/`headroom`/`lean-ctx` on one real agentic SDLC workload, with raw transcripts and a pre-registered protocol | No, a one-time report, last updated 2026-06-15 | No, a static report, not a tool you run | Yes, and rigorously: credit where it's due |
-| Langfuse / Vantage / Finout / Amnic / Revenium | LLM cost observability, tracks your actual API spend across models and providers | Yes, hosted/ongoing | Yes | No, these track spend; they don't check whether a specific proxy's specific savings claim holds up |
+## What it measures
 
-[tokbench](https://github.com/Entelligentsia/tokbench) is the closest prior art and
-deserves real credit: it's a rigorous, disclosed, reproducible one-time comparison of
-the same three proxies TokenTrust targets, with raw transcripts and a pre-registered
-protocol. Its own results (rtk: 2.28M tokens on a real workload vs. headroom: 3.24M,
-+43%) are worth reading directly. TokenTrust's difference is running the same kind of
-check continuously, in your own repo and your own CI, instead of as a single published
-snapshot.
+- **TT01: Compression Ratio.** Actual token reduction, measured with a local tokenizer
+  (`js-tiktoken`), against every task in the corpus.
+- **TT02: Cost-Savings Delta.** Dollar-cost savings computed from TT01's measured token delta at
+  published model pricing. Optional `--live` mode verifies the estimate against a real,
+  provider-billed sample (opt-in, your own API key, gated behind `--confirm-cost`, capped at 5
+  tasks by default).
+- **TT03: Never-Worse Output Guard.** Checks whether a proxy's compressed output dropped content
+  a task marks as required to survive compression.
+- **TT04: Cross-Tool Comparative Benchmark.** Pass `--proxy` more than once and TokenTrust runs
+  the identical task corpus through every named proxy side by side.
+- **TT05: Version-Drift Regression Detection.** Compares a run's measured savings against the
+  last-verified baseline for the same proxy/repo pair, so a silent regression across a version
+  bump (like `rtk#582`) gets caught automatically.
+
+## Commands
+
+```
+tokentrust verify --proxy <name> [options]
+```
+
+| Flag | Description |
+|---|---|
+| `--proxy <name>` | Proxy to verify. Repeatable, pass it more than once to run TT04's cross-tool comparison. Supported: `rtk`, `headroom`, `lean-ctx`. Required. |
+| `--repo <path>` | Repo to measure against. Defaults to the current directory. |
+| `--tasks <file>` | Task corpus YAML file. Defaults to the bundled 23-task corpus. |
+| `--live` | Sample real, provider-billed tokens for the first proxy instead of estimating from pricing tables. Requires `--confirm-cost`. |
+| `--confirm-cost` | Confirms the estimated spend `--live` prints before any real API call is made. |
+| `--live-max-tasks <n>` | Max tasks sampled in `--live` mode. Defaults to 5. |
+| `--format <terminal\|json>` | Report output format. Defaults to `terminal`. |
+| `-h`, `--help` | Show the help message and exit. |
+
+Exit code is `0` when the run completes with no gated failure, non-zero otherwise. The bundled
+GitHub Action's `--fail-on-regression` maps that straight to a failed CI step, so a version-drift
+regression breaks the build instead of shipping silently.
+
+Add it to CI with the bundled GitHub Action (`action/action.yml`) so verification reruns
+automatically whenever a proxy's version bumps:
+
+```yaml
+- uses: RudrenduPaul/TokenTrust@main
+  with:
+    proxy: rtk
+    fail-on-regression: 'true'
+```
 
 ## Proxy support (v0.1)
 
 | Proxy | Status |
 |---|---|
 | `rtk` | Fully supported: real subprocess-based verification (`rtk pipe --filter <name>` for stdin-shaped tasks, `rtk read -l aggressive <files>` for file-based tasks). |
-| `headroom` | Recognized (`--proxy headroom` is a valid flag value), not yet supported: headroom is an HTTP proxy server, not a one-shot compression CLI, so v0.1's subprocess-based harness can't drive it. `tokentrust verify --proxy headroom` prints a message and skips it instead of failing silently. Planned for a future version behind a real HTTP-proxy-traffic test harness. |
+| `headroom` | Recognized (`--proxy headroom` is a valid flag value), not yet supported. headroom is an HTTP proxy server, not a one-shot compression CLI, so v0.1's subprocess-based harness can't drive it. `tokentrust verify --proxy headroom` prints a message and skips it instead of failing silently. |
 | `lean-ctx` | Recognized, support paused for v0.1. |
 
-## What it measures
+## How it compares
 
-- **TT01: Compression Ratio.** Actual token reduction, measured with a local
-  tokenizer, against every task in the corpus.
-- **TT02: Cost-Savings Delta.** Dollar-cost savings computed from TT01's measured
-  token delta at published model pricing. Optional `--live` mode verifies the
-  estimate against a real, provider-billed sample (opt-in, your own API key, gated
-  behind `--confirm-cost`, capped at 5 tasks by default).
-- **TT03: Never-Worse Output Guard.** Checks whether a proxy's compressed output
-  dropped content a task marks as required to survive compression.
-- **TT04: Cross-Tool Comparative Benchmark.** Runs the identical task corpus through
-  every supported proxy side by side.
-- **TT05: Version-Drift Regression Detection.** Compares a run's measured savings
-  against the last-verified baseline for the same proxy/repo pair, so a silent
-  regression across a proxy version bump (like `rtk#582`) gets caught automatically.
+| | What it does | Ongoing / self-serve | Verifies a specific claim |
+|---|---|---|---|
+| **TokenTrust** | Runs a named proxy against a labeled task corpus, measures real compression, cost, and output-quality regression, prints claimed vs. measured | Yes, runs in your own CI, on your own repo, every time a proxy version bumps | Yes, that's the whole point |
+| [tokbench](https://github.com/Entelligentsia/tokbench) | Independent pilot benchmark of rtk, headroom, and lean-ctx on one real agentic SDLC task, with raw transcripts and a pre-registered protocol | No, a single-repo, N=1 pilot report, replication in progress | Yes, and rigorously: credit where it's due |
+| [Langfuse](https://github.com/langfuse/langfuse), Vantage, Finout, Amnic, Revenium | LLM/AI cost observability and FinOps. Track your actual API spend across models and providers, allocate it across teams | Yes, hosted or self-hosted, ongoing | No, these track what you spent; they don't check whether a specific proxy's specific savings claim holds up |
 
-## Install and run
+[tokbench](https://github.com/Entelligentsia/tokbench) is the closest prior art and deserves real
+credit. It's rigorous and disclosed, but its pilot scope is narrower than a first read suggests:
+one repository, one task, N=1 per arm, replication runs in progress. Its own numbers on that
+pilot are worth reading directly. Provider-billed input tokens against a 2.28M-token native
+baseline came in at 2.89M for rtk (+27%) and 3.24M for headroom (+43%, despite headroom
+genuinely compressing 342K tokens on the wire), because the agent's turn count grew even as the
+per-turn payload shrank. That's a real, independently useful data point, and it's exactly the
+kind of gap between "compressed" and "cheaper" TokenTrust exists to keep catching, continuously,
+in your own repo rather than a single published pilot.
 
-```
-npx tokentrust verify --proxy rtk
-```
+## What is TokenTrust, and why does it exist
 
-No config file is required. `--repo` defaults to the current directory and `--tasks`
-defaults to the bundled 15-task corpus, so the command above works standalone.
+TokenTrust is a command-line tool that measures whether an AI-coding-agent context-reduction
+proxy's advertised token and cost savings hold up against a real, labeled task corpus, run with a
+local tokenizer instead of a spreadsheet estimate. It exists because compression proxies
+currently self-report their own savings numbers, and there is no independent, repeatable,
+CI-native way to check one before adopting it. TokenTrust is not a proxy itself and does not
+compress anything. It verifies proxies that do.
 
-Add it to CI with the bundled GitHub Action (`action/action.yml`) to re-run
-verification automatically whenever a proxy's version bumps.
+## FAQ
+
+**How does TokenTrust decide a savings number is trustworthy?**
+It doesn't decide trust for you. It runs the proxy against a fixed, labeled task corpus, measures
+the real token delta with a local tokenizer, and prints that measured number next to the number
+the proxy's own README claims. What you do with the gap is up to you.
+
+**Does TokenTrust modify my code or my proxy's compressed output?**
+No. It runs the proxy as a real subprocess against fixture tasks, captures the output, and
+measures it. Nothing in your repo or the proxy's configuration is changed.
+
+**What happens if a proxy regresses output quality to hit a bigger compression number?**
+That's what TT03 (Never-Worse Output Guard) checks: whether the compressed output dropped
+content a task marked as required to survive compression. On the current 23-task corpus, TT03
+fails on 2 tasks (`refactor-extract-service`, `add-retry-wrapper-feature`), both pre-existing and
+tracked openly rather than hidden from the summary.
+
+**Can TokenTrust verify a proxy's live, provider-billed cost instead of an estimate?**
+Yes, with `--live --confirm-cost`, capped at 5 tasks by default via `--live-max-tasks`. It uses
+your own API key and never runs a real charge without printing the estimated spend first.
+
+**Does TokenTrust support more than one proxy?**
+`rtk` is fully supported today. `headroom` and `lean-ctx` are recognized flag values but not yet
+drivable. headroom is an HTTP proxy server rather than a one-shot CLI, and `lean-ctx` support is
+paused for v0.1. Passing `--proxy` more than once runs TT04's cross-tool comparison across
+whichever proxies are supported.
+
+**Is the 23-task corpus statistically representative of every codebase?**
+No, and the CLI says so on every run: it's a directional measurement across a fixed corpus, not a
+statistically powered claim across all repos and workloads. A TT05 pass means no regression was
+detected on this run, not a guarantee across all possible future tasks.
+
+## Real-world validation
+
+TokenTrust's own validation work has already fed back into a real, independently tracked GitHub
+issue: [`rtk-ai/rtk#1313`](https://github.com/rtk-ai/rtk/issues/1313) (filed by @ChrisEdwards,
+asking rtk for a lossless-only mode and an honest account of the silent failures truncation
+causes in agent contexts) was originally verified as only partially addressed by rtk's existing
+mechanism, because TokenTrust's own fixtures didn't yet carry the quality markers needed to prove
+it either way. Extending three of TokenTrust's `pipe --filter` fixtures with real, verified
+quality markers closed that gap in TokenTrust's own instrumentation, not in rtk, and let the tool
+confirm, against the real rtk 0.43.0 binary and not a claim, that rtk's existing never-worse guard
+mechanism already does what the issue asked for. The issue's verdict moved from partial to a
+genuine, re-verified pass as a direct result. TokenTrust never touched rtk's own repository; it
+got sharp enough to prove what was already true there.
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the project layout, how to add a
-verification category or fixture task, and the coverage bar every category change
-is held to.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the project layout, how to add a verification
+category or fixture task, and the coverage bar every category change is held to.
 
 ## License
 
