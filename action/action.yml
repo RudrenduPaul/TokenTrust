@@ -75,7 +75,7 @@ runs:
         fi
 
         set +e
-        OUTPUT=$(npx --yes tokentrust verify "${PROXY_ARGS[@]}" --repo "$TT_REPO" "${TASKS_ARGS[@]}" --format json)
+        OUTPUT=$(npx --yes tokentrust-cli verify "${PROXY_ARGS[@]}" --repo "$TT_REPO" "${TASKS_ARGS[@]}" --format json)
         VERIFY_EXIT_CODE=$?
         set -e
 

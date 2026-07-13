@@ -58,7 +58,7 @@ extending an existing category:
    is the exact failure mode this tool exists to catch in other people's
    tools.
 4. If your change affects a number shown in the README, re-run
-   `npx tokentrust verify` against the bundled fixture corpus and update the
+   `npx tokentrust-cli verify` against the bundled fixture corpus and update the
    README with the real output — never hand-type a measurement.
 
 ## How to add a fixture task
@@ -90,7 +90,7 @@ repo per task under `fixtures/repos/<task-id>/`. To add a task:
    the compressed output for the task to pass the guard. This is an additive
    field on top of the locked schema (`version`, `id`, `description`,
    `fixture_repo`, `prompt`, `difficulty`); omitting it is always valid.
-5. Run `npx tokentrust verify --proxy rtk --tasks ./fixtures/tasks.yml` and
+5. Run `npx tokentrust-cli verify --proxy rtk --tasks ./fixtures/tasks.yml` and
    confirm your new task produces a sane, reproducible result before opening
    a PR.
 

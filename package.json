@@ -1,6 +1,6 @@
 {
-  "name": "tokentrust",
-  "version": "0.1.1",
+  "name": "tokentrust-cli",
+  "version": "0.1.2",
   "description": "Vendor-neutral CLI that independently verifies the actual token/cost savings delivered by AI-coding-agent context-reduction proxies (rtk, headroom, lean-ctx) against a real, labeled task corpus and a local tokenizer.",
   "type": "module",
   "main": "./dist/index.js",
@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RudrenduPaul/TokenTrust.git"
+    "url": "git+https://github.com/RudrenduPaul/TokenTrust-CLI.git"
   },
   "keywords": [
     "token-reduction",
@@ -42,9 +42,9 @@
   "author": "",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/RudrenduPaul/TokenTrust/issues"
+    "url": "https://github.com/RudrenduPaul/TokenTrust-CLI/issues"
   },
-  "homepage": "https://github.com/RudrenduPaul/TokenTrust#readme",
+  "homepage": "https://github.com/RudrenduPaul/TokenTrust-CLI#readme",
   "dependencies": {
     "js-tiktoken": "^1.0.21",
     "yaml": "^2.9.0"

@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-07-13
+
+### Changed
+
+- **Package renamed from `tokentrust` to `tokentrust-cli`** on the npm registry, and the
+  GitHub repo renamed from `TokenTrust` to `TokenTrust-CLI`, to make the project's CLI
+  identity explicit for discoverability. The installed command itself is unchanged --
+  it's still `tokentrust` (e.g. `npx tokentrust-cli verify --proxy rtk` installs the
+  renamed package and runs the same `tokentrust` binary as before). The old `tokentrust`
+  package on npm is deprecated and points to `tokentrust-cli`; it is not unpublished.
+- Bundled GitHub Action (`action/action.yml`) updated to invoke `npx tokentrust-cli`
+  internally instead of the now-deprecated `npx tokentrust`.
+- All repo/package references in README, CONTRIBUTING.md, and CLAUDE.md updated to the
+  new names.
+
 ## [0.1.1] - 2026-07-12
 
 ### Changed

@@ -7,9 +7,11 @@
   lean-ctx) against a real, labeled task corpus and a local tokenizer -- free/OSS
   benchmark harness, plus a paid hosted team-verification/budget-governance tier
   (v0.2, out of scope for this repo today)
-- **Repo:** RudrenduPaul/TokenTrust
-- **Distribution:** npx-installable CLI (npx tokentrust verify), global npm install,
-  plus a GitHub Action wrapper for CI-triggered re-verification on proxy version bumps
+- **Repo:** RudrenduPaul/TokenTrust-CLI
+- **Distribution:** npx-installable CLI, published to npm as `tokentrust-cli` (npx
+  tokentrust-cli verify; the installed command itself is still `tokentrust`), global
+  npm install, plus a GitHub Action wrapper for CI-triggered re-verification on proxy
+  version bumps
 - **Language:** TypeScript/Node. This is a runtime choice for TokenTrust itself, not
   a claim that the supported proxies share this ecosystem -- they don't: `rtk` is a
   Rust binary (single static binary, no Node runtime), `headroom` is a Python package
