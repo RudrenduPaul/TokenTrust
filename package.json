@@ -1,6 +1,6 @@
 {
   "name": "tokentrust",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vendor-neutral CLI that independently verifies the actual token/cost savings delivered by AI-coding-agent context-reduction proxies (rtk, headroom, lean-ctx) against a real, labeled task corpus and a local tokenizer.",
   "type": "module",
   "main": "./dist/index.js",

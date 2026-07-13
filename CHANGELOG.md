@@ -5,7 +5,15 @@ All notable changes to this project are documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] — v0.1.0
+## [0.1.1] - 2026-07-12
+
+### Changed
+
+- README: updated the Install section and npm badge now that `tokentrust` is
+  live on the npm registry -- `npx tokentrust verify --proxy rtk` replaces
+  the old "install from source" instructions.
+
+## [0.1.0] - 2026-07-12
 
 ### Added
 
