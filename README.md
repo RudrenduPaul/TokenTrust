@@ -2,7 +2,7 @@
 
 <!-- TODO: record a real terminal demo GIF and drop it here.
      Capture script (run for real, on camera, no fabricated output):
-       1. `npx tokentrust verify --proxy rtk` -- let the full 23-task run play out,
+       1. `npx tokentrust-cli verify --proxy rtk` -- let the full 23-task run play out,
           keep the [MEASURED] TT01/TT02 lines and the final summary line on screen.
        2. Target 15-20 seconds, terminal width 100 cols, asciinema or a plain screen
           recording converted to GIF. Save as `docs/demo.gif` and reference it below
@@ -15,25 +15,25 @@ Vendor-neutral CLI that independently verifies the token and cost savings AI-cod
 context-reduction proxies actually deliver, by running the proxy for real against a labeled
 task corpus instead of trusting the maintainer's own number.
 
-[![CI](https://github.com/RudrenduPaul/TokenTrust/actions/workflows/ci.yml/badge.svg)](https://github.com/RudrenduPaul/TokenTrust/actions/workflows/ci.yml)
+[![CI](https://github.com/RudrenduPaul/TokenTrust-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/RudrenduPaul/TokenTrust-CLI/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
-[![npm](https://img.shields.io/npm/v/tokentrust.svg)](https://www.npmjs.com/package/tokentrust)
+[![npm](https://img.shields.io/npm/v/tokentrust-cli.svg)](https://www.npmjs.com/package/tokentrust-cli)
 
 </div>
 
 ## Install
 
 ```sh
-npx tokentrust verify --proxy rtk
+npx tokentrust-cli verify --proxy rtk
 ```
 
 No clone, no local build. `npx` fetches the published package and runs it directly. To install
-it as a dependency instead: `npm install -g tokentrust`.
+it as a dependency instead: `npm install -g tokentrust-cli`.
 
 Real output from that exact command, run against the bundled 23-task corpus:
 
 ```
-$ npx tokentrust verify --proxy rtk
+$ npx tokentrust-cli verify --proxy rtk
 
 TokenTrust v0.1 -- Token/Context-Reduction Claims Verification
 Proxy: rtk 0.43.0 | Repo: TokenTrust | Task corpus: 23 labeled tasks
@@ -57,8 +57,9 @@ Proxy: rtk 0.43.0 | Repo: TokenTrust | Task corpus: 23 labeled tasks
 Summary: 77.0% measured cost savings (claimed: up to 70%) -- see full report
 ```
 
-That's a real run's output, not a hand-typed example -- `npx tokentrust` invokes the exact same
-`dist/cli.js` entry point, so it reproduces on your machine with no clone required.
+That's a real run's output, not a hand-typed example -- `npx tokentrust-cli` invokes the exact
+same `dist/cli.js` entry point (the `tokentrust` command name is unchanged), so it reproduces on
+your machine with no clone required.
 
 ## Table of contents
 
@@ -99,7 +100,7 @@ We also found and fixed a bug in our own measurement: one fixture's baseline had
 been captured with `git log --oneline` instead of a true raw `git log`, which understated rtk's
 real compression on that task by roughly 42 percentage points. Recapturing it honestly is why
 `verify-git-log-filter` now measures 95.4%, the highest reduction in the corpus, and a real one.
-[Commit e42246c](https://github.com/RudrenduPaul/TokenTrust/commit/e42246c) has the fix; `[redacted]`
+[Commit e42246c](https://github.com/RudrenduPaul/TokenTrust-CLI/commit/e42246c) has the fix; `[redacted]`
 in this repo has the house rule that caught it (no measurement number ships without a fixture-run
 behind it).
 
@@ -144,7 +145,7 @@ Add it to CI with the bundled GitHub Action (`action/action.yml`) so verificatio
 automatically whenever a proxy's version bumps:
 
 ```yaml
-- uses: RudrenduPaul/TokenTrust@main
+- uses: RudrenduPaul/TokenTrust-CLI@main
   with:
     proxy: rtk
     fail-on-regression: 'true'
