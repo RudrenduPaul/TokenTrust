@@ -100,9 +100,8 @@ We also found and fixed a bug in our own measurement: one fixture's baseline had
 been captured with `git log --oneline` instead of a true raw `git log`, which understated rtk's
 real compression on that task by roughly 42 percentage points. Recapturing it honestly is why
 `verify-git-log-filter` now measures 95.4%, the highest reduction in the corpus, and a real one.
-[Commit e42246c](https://github.com/RudrenduPaul/TokenTrust-CLI/commit/e42246c) has the fix; `[redacted]`
-in this repo has the house rule that caught it (no measurement number ships without a fixture-run
-behind it).
+[Commit e42246c](https://github.com/RudrenduPaul/TokenTrust-CLI/commit/e42246c) has the fix --
+no measurement number ships without a fixture-run behind it.
 
 ## What it measures
 
