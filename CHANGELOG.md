@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-07-15
+
+### Removed
+
+- **`lean-ctx` proxy adapter support**, dropped entirely: `src/adapters/lean-ctx.ts` and its
+  test suite are deleted, `ProxyName` is now `'rtk' | 'headroom'`, and the adapter registry,
+  CLI `--proxy` validation/help text, README, and GitHub Action example all updated to reflect
+  only `rtk` and `headroom` as supported proxies. This is a breaking change for anyone passing
+  `--proxy lean-ctx` — that flag value is no longer recognized. Reason: `lean-ctx` collided with
+  an unrelated internal tool name, and removing it eliminates the ambiguity going forward.
+
 ## [0.1.2] - 2026-07-13
 
 ### Changed

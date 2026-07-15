@@ -12,8 +12,8 @@ describe('parseCliFlags', () => {
   });
 
   it('parses repeated --proxy flags (cross-tool comparison)', () => {
-    const flags = parseCliFlags(['--proxy', 'rtk', '--proxy', 'headroom', '--proxy', 'lean-ctx']);
-    expect(flags.proxy).toEqual(['rtk', 'headroom', 'lean-ctx']);
+    const flags = parseCliFlags(['--proxy', 'rtk', '--proxy', 'headroom']);
+    expect(flags.proxy).toEqual(['rtk', 'headroom']);
   });
 
   it('parses --live, --confirm-cost, and --live-max-tasks together', () => {

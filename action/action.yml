@@ -14,7 +14,7 @@ inputs:
   proxy:
     description: >-
       Proxy to verify. Repeatable by passing a space-separated list (e.g.
-      "rtk headroom lean-ctx") to run a cross-tool comparison (TT04).
+      "rtk headroom") to run a cross-tool comparison (TT04).
     required: true
   repo:
     description: 'Path to the repo to benchmark against. Defaults to the workflow checkout root.'

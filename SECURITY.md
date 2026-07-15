@@ -29,22 +29,22 @@ When reporting, please include:
    corpus under `fixtures/` and `src/categories/testdata/` you can use as a
    base).
 3. The TokenTrust version and Node.js version you're running.
-4. Any proxy adapter involved (`rtk`, `headroom`, `lean-ctx`), if relevant —
+4. Any proxy adapter involved (`rtk`, `headroom`), if relevant —
    for example, a vulnerability triggered by a proxy's output reaching the
    tokenizer or the report writer.
 
 ## Scope
 
-TokenTrust shells out to external proxy binaries (`rtk`, `headroom`,
-`lean-ctx`) as unprivileged child processes and never sends task content,
-repo data, or measurement results to any third party unless you explicitly
-opt into `--live` mode with your own API key. Security reports involving
-credential handling, command injection through task/fixture input, or JSON
-report parsing are especially high priority.
+TokenTrust shells out to external proxy binaries (`rtk`, `headroom`) as
+unprivileged child processes and never sends task content, repo data, or
+measurement results to any third party unless you explicitly opt into
+`--live` mode with your own API key. Security reports involving credential
+handling, command injection through task/fixture input, or JSON report
+parsing are especially high priority.
 
 Vulnerabilities in the third-party proxy binaries themselves (`rtk`,
-`headroom`, `lean-ctx`) are out of scope for this repository — please report
-those directly to the respective project.
+`headroom`) are out of scope for this repository — please report those
+directly to the respective project.
 
 ## Our Commitment
 

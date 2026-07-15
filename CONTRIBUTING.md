@@ -26,7 +26,7 @@ needs a reproducible fixture behind it, not just a passing type-checker.
 src/
   cli.ts                 CLI entry point (verify subcommand, flag parsing)
   tasks/                 tokentrust-tasks.yml loader + schema types
-  adapters/               ProxyAdapter interface + rtk/headroom/lean-ctx adapters
+  adapters/               ProxyAdapter interface + rtk/headroom adapters
   tokenizer/              local tokenizer wrapper (js-tiktoken)
   categories/             TT01-TT05 verification category logic
     testdata/<category>/clean|vulnerable   labeled fixtures per category
@@ -96,14 +96,14 @@ repo per task under `fixtures/repos/<task-id>/`. To add a task:
 
 ## How to add support for a new proxy
 
-`src/adapters/registry.ts` hardcodes the three supported proxies on purpose
+`src/adapters/registry.ts` hardcodes the two supported proxies on purpose
 (see `[redacted]` and the architecture notes — this is a small named registry,
-not a generic plugin system, because three known proxies don't need one).
-Adding a fourth proxy means:
+not a generic plugin system, because two known proxies don't need one).
+Adding a third proxy means:
 
 1. Implement the `ProxyAdapter` interface (`src/adapters/types.ts`) in a new
    `src/adapters/<name>.ts` file, following the pattern in `rtk.ts` /
-   `headroom.ts` / `lean-ctx.ts`.
+   `headroom.ts`.
 2. Register it in `src/adapters/registry.ts`.
 3. Add adapter-level tests covering: `isInstalled()` true/false, `run()` happy
    path, and the missing-binary error path (this is a CRITICAL path — see the

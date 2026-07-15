@@ -12,7 +12,7 @@ export interface CompressInvocation {
 }
 
 /**
- * Shared implementation for the three ProxyAdapter implementations. Each
+ * Shared implementation for the two ProxyAdapter implementations. Each
  * concrete adapter only supplies its binary name, install command, and the
  * CLI args to invoke for --version / compression -- all process-spawning,
  * caching, and error-handling behavior lives here once ([redacted] DRY
@@ -54,7 +54,7 @@ export abstract class BaseAdapter implements ProxyAdapter {
 
   /**
    * Builds the actual CLI invocation for the compress step. Defaults to the
-   * adapter's fixed compressArgs over stdin (headroom, lean-ctx). rtk
+   * adapter's fixed compressArgs over stdin (headroom). rtk
    * overrides this -- its real CLI has no single fixed args array (it's
    * `rtk pipe --filter X` for stdin-based filter tasks, or
    * `rtk read -l aggressive <files>` for file-based tasks).

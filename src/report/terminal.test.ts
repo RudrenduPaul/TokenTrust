@@ -42,7 +42,6 @@ describe('renderTerminalReport', () => {
         results: [
           { proxy: 'rtk', measuredSavingsPct: 39.6 },
           { proxy: 'headroom', measuredSavingsPct: 44.8 },
-          { proxy: 'lean-ctx', measuredSavingsPct: 38.1 },
         ],
         taskCorpusSize: 12,
         primaryProxy: 'rtk',
@@ -88,7 +87,7 @@ describe('renderTerminalReport', () => {
 
   it('renders TT02 with no claimed figure gracefully', () => {
     const output = renderTerminalReport({
-      proxy: 'lean-ctx',
+      proxy: 'headroom',
       proxyVersion: '0.9.0',
       repo: '.',
       taskCorpusSize: 3,

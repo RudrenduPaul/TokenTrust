@@ -76,7 +76,7 @@ your machine with no clone required.
 
 ## Why this exists
 
-Context-reduction proxies (`rtk`, `headroom`, `lean-ctx`, and others) publish compression and
+Context-reduction proxies (`rtk`, `headroom`, and others) publish compression and
 cost-savings numbers in their own READMEs. Those numbers come from the maintainer's own
 benchmark, on the maintainer's own workload, with nobody outside the project checking the math.
 That's not an accusation. It's just how every proxy in this space currently reports its own
@@ -128,7 +128,7 @@ tokentrust verify --proxy <name> [options]
 
 | Flag | Description |
 |---|---|
-| `--proxy <name>` | Proxy to verify. Repeatable, pass it more than once to run TT04's cross-tool comparison. Supported: `rtk`, `headroom`, `lean-ctx`. Required. |
+| `--proxy <name>` | Proxy to verify. Repeatable, pass it more than once to run TT04's cross-tool comparison. Supported: `rtk`, `headroom`. Required. |
 | `--repo <path>` | Repo to measure against. Defaults to the current directory. |
 | `--tasks <file>` | Task corpus YAML file. Defaults to the bundled 23-task corpus. |
 | `--live` | Sample real, provider-billed tokens for the first proxy instead of estimating from pricing tables. Requires `--confirm-cost`. |
@@ -157,14 +157,13 @@ automatically whenever a proxy's version bumps:
 |---|---|
 | `rtk` | Fully supported: real subprocess-based verification (`rtk pipe --filter <name>` for stdin-shaped tasks, `rtk read -l aggressive <files>` for file-based tasks). |
 | `headroom` | Recognized (`--proxy headroom` is a valid flag value), not yet supported. headroom is an HTTP proxy server, not a one-shot compression CLI, so v0.1's subprocess-based harness can't drive it. `tokentrust verify --proxy headroom` prints a message and skips it instead of failing silently. |
-| `lean-ctx` | Recognized, support paused for v0.1. |
 
 ## How it compares
 
 | | What it does | Ongoing / self-serve | Verifies a specific claim |
 |---|---|---|---|
 | **TokenTrust** | Runs a named proxy against a labeled task corpus, measures real compression, cost, and output-quality regression, prints claimed vs. measured | Yes, runs in your own CI, on your own repo, every time a proxy version bumps | Yes, that's the whole point |
-| [tokbench](https://github.com/Entelligentsia/tokbench) | Independent pilot benchmark of rtk, headroom, and lean-ctx on one real agentic SDLC task, with raw transcripts and a pre-registered protocol | No, a single-repo, N=1 pilot report, replication in progress | Yes, and rigorously: credit where it's due |
+| [tokbench](https://github.com/Entelligentsia/tokbench) | Independent pilot benchmark of rtk and headroom on one real agentic SDLC task, with raw transcripts and a pre-registered protocol | No, a single-repo, N=1 pilot report, replication in progress | Yes, and rigorously: credit where it's due |
 | [Langfuse](https://github.com/langfuse/langfuse), Vantage, Finout, Amnic, Revenium | LLM/AI cost observability and FinOps. Track your actual API spend across models and providers, allocate it across teams | Yes, hosted or self-hosted, ongoing | No, these track what you spent; they don't check whether a specific proxy's specific savings claim holds up |
 
 [tokbench](https://github.com/Entelligentsia/tokbench) is the closest prior art and deserves real
@@ -208,10 +207,9 @@ Yes, with `--live --confirm-cost`, capped at 5 tasks by default via `--live-max-
 your own API key and never runs a real charge without printing the estimated spend first.
 
 **Does TokenTrust support more than one proxy?**
-`rtk` is fully supported today. `headroom` and `lean-ctx` are recognized flag values but not yet
-drivable. headroom is an HTTP proxy server rather than a one-shot CLI, and `lean-ctx` support is
-paused for v0.1. Passing `--proxy` more than once runs TT04's cross-tool comparison across
-whichever proxies are supported.
+`rtk` is fully supported today. `headroom` is a recognized flag value but not yet drivable, since
+it's an HTTP proxy server rather than a one-shot CLI. Passing `--proxy` more than once runs TT04's
+cross-tool comparison across whichever proxies are supported.
 
 **Is the 23-task corpus statistically representative of every codebase?**
 No, and the CLI says so on every run: it's a directional measurement across a fixed corpus, not a

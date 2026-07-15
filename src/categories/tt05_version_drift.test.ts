@@ -136,7 +136,7 @@ describe('findLatestRun', () => {
     };
     expect(findLatestRun(store, 'rtk', 'repo-a')?.runId).toBe('r2');
     expect(findLatestRun(store, 'headroom', 'repo-a')?.runId).toBe('r3');
-    expect(findLatestRun(store, 'lean-ctx', 'repo-a')).toBeUndefined();
+    expect(findLatestRun(store, 'rtk', 'repo-b')).toBeUndefined();
   });
 });
 

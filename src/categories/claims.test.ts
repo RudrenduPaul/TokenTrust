@@ -9,7 +9,7 @@ describe('getClaimedSavings', () => {
   });
 
   it('returns null with a clear "no claimed figure" label for proxies without a sourced claim yet', () => {
-    for (const proxy of ['headroom', 'lean-ctx'] as const) {
+    for (const proxy of ['headroom'] as const) {
       const claim = getClaimedSavings(proxy);
       expect(claim.pct).toBeNull();
       expect(claim.label).toBe('no claimed figure on file');
