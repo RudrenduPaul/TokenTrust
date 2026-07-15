@@ -1,4 +1,4 @@
 {
-  "proxy": "lean-ctx",
+  "proxy": "headroom",
   "taskIds": ["fix-typo-docstring", "fix-off-by-one-loop", "refactor-split-utils"]
 }

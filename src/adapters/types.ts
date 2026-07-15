@@ -1,6 +1,6 @@
 import type { Task } from '../tasks/types.js';
 
-export type ProxyName = 'rtk' | 'headroom' | 'lean-ctx';
+export type ProxyName = 'rtk' | 'headroom';
 
 export interface AdapterResult {
   /** Exact text that would reach the LLM for this task/mode. */

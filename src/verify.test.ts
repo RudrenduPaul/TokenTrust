@@ -62,19 +62,17 @@ describe('runVerify', () => {
       expect(printed.some((line) => line.includes('Report:'))).toBe(true);
     });
 
-    it('runs a cross-tool comparison (TT04) when more than one proxy is requested', async () => {
-      const adapters: Record<string, FakeAdapter> = {
-        rtk: new FakeAdapter('rtk', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(60) }),
-        'lean-ctx': new FakeAdapter('lean-ctx', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(40) }),
-      };
-      const outcome = await runVerify(
-        baseOptions({ proxies: ['rtk', 'lean-ctx'] }),
-        baseDeps({ getAdapter: (name) => adapters[name]! }),
-      );
-      expect(outcome.exitCode).toBe(0);
-      const tt04Records = outcome.report?.records.filter((r) => r.category === 'TT04') ?? [];
-      expect(tt04Records.map((r) => r.proxy).sort()).toEqual(['lean-ctx', 'rtk']);
-    });
+    // NOTE: with lean-ctx removed, rtk and headroom are the only two
+    // ProxyName values left, and headroom is unconditionally intercepted by
+    // the "not yet supported" gate below before it is ever dispatched -- so
+    // there is no longer a way to get two REAL, simultaneously-dispatched
+    // adapters through runVerify() in v0.1 to exercise an end-to-end TT04
+    // run. TT04's own aggregation/mismatch logic is still fully covered at
+    // the unit level in src/categories/tt04_cross_tool_benchmark.test.ts
+    // (using rtk + headroom fixtures directly, bypassing runVerify's gate).
+    // This integration-level scenario becomes reachable again once a second
+    // proxy is actually dispatchable (e.g. headroom's HTTP-proxy harness, or
+    // a newly added proxy).
   });
 
   describe('CRITICAL: missing-binary error path', () => {
@@ -164,16 +162,24 @@ describe('runVerify', () => {
       expect(printed.some((line) => line.includes(LIVE_API_KEY_ENV_VAR))).toBe(true);
     });
 
-    it('--live with multiple --proxy flags: warns which proxies are NOT live-verified, still verifies the first', async () => {
-      const adapters: Record<string, FakeAdapter> = {
-        rtk: new FakeAdapter('rtk', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(60) }),
-        'lean-ctx': new FakeAdapter('lean-ctx', { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(40) }),
-      };
+    // NOTE: with lean-ctx removed, rtk and headroom are the only two
+    // ProxyName values left, and headroom is unconditionally gated out
+    // before dispatch (see the 'headroom: v0.1 CLI-level not-yet-supported
+    // gate' tests below) -- so there is no longer a pairing of two REAL,
+    // simultaneously-dispatched proxies to exercise the "--live warns which
+    // additional proxies are NOT live-verified" message. The test below
+    // instead confirms the actual current behavior: --proxy rtk --proxy
+    // headroom with --live still only ever dispatches rtk, so the
+    // multi-proxy live warning never fires.
+    it('--live --proxy rtk --proxy headroom: headroom is gated out before dispatch, so only rtk is ever live-verified and no multi-proxy warning fires', async () => {
       const liveApiClient = vi.fn(async (taskId: string): Promise<LiveApiCall> => ({ taskId, billedInputTokens: 42 }));
+      const getAdapter = vi.fn((name: ProxyName) =>
+        new FakeAdapter(name, { baseline: () => 'x'.repeat(100), compressed: () => 'x'.repeat(60) }),
+      );
       const outcome = await runVerify(
-        baseOptions({ proxies: ['rtk', 'lean-ctx'], live: true, confirmCost: true, liveMaxTasks: 25 }),
+        baseOptions({ proxies: ['rtk', 'headroom'], live: true, confirmCost: true, liveMaxTasks: 25 }),
         baseDeps({
-          getAdapter: (name) => adapters[name]!,
+          getAdapter,
           liveApiClient,
           env: { [LIVE_API_KEY_ENV_VAR]: 'sk-real-looking-key' },
         }),
@@ -181,11 +187,8 @@ describe('runVerify', () => {
 
       expect(outcome.exitCode).toBe(0);
       expect(liveApiClient).toHaveBeenCalled();
-      expect(
-        printed.some(
-          (line) => line.includes('--live only verifies the first proxy (rtk)') && line.includes('lean-ctx'),
-        ),
-      ).toBe(true);
+      expect(getAdapter).not.toHaveBeenCalledWith('headroom');
+      expect(printed.some((line) => line.includes('--live only verifies the first proxy'))).toBe(false);
     });
   });
 
