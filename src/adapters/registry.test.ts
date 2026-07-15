@@ -11,7 +11,6 @@ describe('registry', () => {
   it('isSupportedProxy() accepts the 2 known proxies and rejects anything else', () => {
     expect(isSupportedProxy('rtk')).toBe(true);
     expect(isSupportedProxy('headroom')).toBe(true);
-    expect(isSupportedProxy('lean-ctx')).toBe(false);
     expect(isSupportedProxy('context-mode')).toBe(false);
     expect(isSupportedProxy('made-up-proxy')).toBe(false);
   });

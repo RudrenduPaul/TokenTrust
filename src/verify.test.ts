@@ -62,8 +62,8 @@ describe('runVerify', () => {
       expect(printed.some((line) => line.includes('Report:'))).toBe(true);
     });
 
-    // NOTE: with lean-ctx removed, rtk and headroom are the only two
-    // ProxyName values left, and headroom is unconditionally intercepted by
+    // NOTE: rtk and headroom are the only two
+    // ProxyName values, and headroom is unconditionally intercepted by
     // the "not yet supported" gate below before it is ever dispatched -- so
     // there is no longer a way to get two REAL, simultaneously-dispatched
     // adapters through runVerify() in v0.1 to exercise an end-to-end TT04
@@ -162,8 +162,8 @@ describe('runVerify', () => {
       expect(printed.some((line) => line.includes(LIVE_API_KEY_ENV_VAR))).toBe(true);
     });
 
-    // NOTE: with lean-ctx removed, rtk and headroom are the only two
-    // ProxyName values left, and headroom is unconditionally gated out
+    // NOTE: rtk and headroom are the only two
+    // ProxyName values, and headroom is unconditionally gated out
     // before dispatch (see the 'headroom: v0.1 CLI-level not-yet-supported
     // gate' tests below) -- so there is no longer a pairing of two REAL,
     // simultaneously-dispatched proxies to exercise the "--live warns which
