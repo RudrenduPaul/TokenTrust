@@ -9,12 +9,13 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Removed
 
-- **`lean-ctx` proxy adapter support**, dropped entirely: `src/adapters/lean-ctx.ts` and its
-  test suite are deleted, `ProxyName` is now `'rtk' | 'headroom'`, and the adapter registry,
-  CLI `--proxy` validation/help text, README, and GitHub Action example all updated to reflect
-  only `rtk` and `headroom` as supported proxies. This is a breaking change for anyone passing
-  `--proxy lean-ctx` — that flag value is no longer recognized. Reason: `lean-ctx` collided with
-  an unrelated internal tool name, and removing it eliminates the ambiguity going forward.
+- **Third proxy adapter removed**, dropped entirely: its source file and test suite are
+  deleted, `ProxyName` is now `'rtk' | 'headroom'`, and the adapter registry, CLI `--proxy`
+  validation/help text, README, and GitHub Action example all updated to reflect only `rtk`
+  and `headroom` as supported proxies. This is a breaking change for anyone passing the
+  removed proxy's flag value to `--proxy` — it is no longer recognized. Reason: the adapter's
+  name collided with an unrelated internal tool name, and removing it eliminates the
+  ambiguity going forward.
 
 ## [0.1.2] - 2026-07-13
 
@@ -44,7 +45,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 ### Added
 
 - `tokentrust verify` CLI — benchmark harness for token/context-reduction
-  proxies (`rtk`, `headroom`, `lean-ctx`), with `--proxy` (repeatable),
+  proxies (`rtk`, `headroom`, and a third adapter later removed in 0.2.0 —
+  see [0.2.0](#020---2026-07-15)), with `--proxy` (repeatable),
   `--repo` (defaults to the current working directory), `--tasks` (defaults
   to the bundled 12-task corpus), `--live`, `--confirm-cost`,
   `--live-max-tasks`, and `--format` flags.
@@ -67,7 +69,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
   chained via `prior_run_id`; degrades gracefully to "no drift comparison
   available" if the local report store is missing or corrupted.
 - `ProxyAdapter` interface and three concrete adapters (`rtk`, `headroom`,
-  `lean-ctx`), each shelling out to its proxy as an external process.
+  and a third later removed in 0.2.0), each shelling out to its proxy as
+  an external process.
 - Local, dependency-free tokenizer wrapper (`js-tiktoken`), with a named
   failure path for malformed/non-UTF8 input (WARN + skip, never crash the
   batch).
@@ -118,4 +121,5 @@ and this project uses [Semantic Versioning](https://semver.org/).
   budget/quota enforcement) are out of scope for v0.1 — see the product
   definition in `[redacted]`.
 - headroom support (behind a real HTTP-proxy-traffic test harness) and
-  lean-ctx support are both out of scope for v0.1.
+  the third adapter's support (removed in 0.2.0) are both out of scope
+  for v0.1.
