@@ -15,9 +15,9 @@ export interface CompressInvocation {
  * Shared implementation for the two ProxyAdapter implementations. Each
  * concrete adapter only supplies its binary name, install command, and the
  * CLI args to invoke for --version / compression -- all process-spawning,
- * caching, and error-handling behavior lives here once ([redacted] DRY
- * note: without this, TT01-TT03's token-counting and comparison logic would
- * otherwise get duplicated once per proxy).
+ * caching, and error-handling behavior lives here once, to keep it DRY:
+ * without this, TT01-TT03's token-counting and comparison logic would
+ * otherwise get duplicated once per proxy.
  */
 export abstract class BaseAdapter implements ProxyAdapter {
   abstract readonly name: ProxyName;
