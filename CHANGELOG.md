@@ -29,7 +29,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
   package on npm is deprecated and points to `tokentrust-cli`; it is not unpublished.
 - Bundled GitHub Action (`action/action.yml`) updated to invoke `npx tokentrust-cli`
   internally instead of the now-deprecated `npx tokentrust`.
-- All repo/package references in README, CONTRIBUTING.md, and [redacted] updated to the
+- All repo/package references in README and CONTRIBUTING.md updated to the
   new names.
 
 ## [0.1.1] - 2026-07-12
@@ -118,8 +118,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 ### Notes
 
 - TT06 (telemetry/data-handling disclosure) and TT07 (hosted team
-  budget/quota enforcement) are out of scope for v0.1 — see the product
-  definition in `[redacted]`.
+  budget/quota enforcement) are out of scope for v0.1.
 - headroom support (behind a real HTTP-proxy-traffic test harness) and
   the third adapter's support (removed in 0.2.0) are both out of scope
   for v0.1.
