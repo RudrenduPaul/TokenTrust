@@ -30,13 +30,12 @@ export type RtkFilter =
   | 'ruff-format';
 
 /**
- * The locked tokentrust-tasks.yml schema ([redacted] resolution (a)):
- * version / id / description / fixture_repo / prompt / difficulty are the
- * required fields. `type` and `quality_markers` are additive, optional
- * fields -- corpora written before they existed remain valid. `type` fills
- * the "vary task type" requirement from the fixture-corpus guidance;
- * `quality_markers` is the additive TT03 extension documented in
- * CONTRIBUTING.md ("How to add a fixture task").
+ * The tokentrust-tasks.yml schema: version / id / description /
+ * fixture_repo / prompt / difficulty are the required fields. `type` and
+ * `quality_markers` are additive, optional fields -- corpora written before
+ * they existed remain valid. `type` fills the "vary task type" requirement
+ * from the fixture-corpus guidance; `quality_markers` is the additive TT03
+ * extension documented in CONTRIBUTING.md ("How to add a fixture task").
  *
  * `filter` is a second additive optional field (product-scoping fix,
  * rtk decision): when set, this task measures rtk's real
