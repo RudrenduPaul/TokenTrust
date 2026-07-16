@@ -44,12 +44,12 @@ describe('resolveVerifyOptions', () => {
     );
   });
 
-  it('--repo defaults to the given cwd when omitted (locked [redacted] default)', () => {
+  it('--repo defaults to the given cwd when omitted (locked default)', () => {
     const options = resolveVerifyOptions(parseCliFlags(['--proxy', 'rtk']), cwd);
     expect(options.repo).toBe(cwd);
   });
 
-  it('--tasks defaults to the bundled corpus path when omitted (locked [redacted] default)', () => {
+  it('--tasks defaults to the bundled corpus path when omitted (locked default)', () => {
     const options = resolveVerifyOptions(parseCliFlags(['--proxy', 'rtk']), cwd);
     expect(options.tasksPath).toMatch(/fixtures[\\/]tasks\.yml$/);
   });
