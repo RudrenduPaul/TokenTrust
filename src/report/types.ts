@@ -4,8 +4,8 @@ export type CategoryId = 'TT01' | 'TT02' | 'TT03' | 'TT04' | 'TT05';
 
 /**
  * Structured, versioned measurement record. Every benchmark run, even in
- * the free CLI,
- * produces this record so a `prior_run_id` chain can exist from day one.
+ * the free CLI, produces this record so a `prior_run_id` chain can exist
+ * from day one.
  */
 export interface ReportRecord {
   run_id: string;
