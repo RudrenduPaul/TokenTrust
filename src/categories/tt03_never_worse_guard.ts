@@ -43,9 +43,8 @@ export type ProgressCallback = (done: number, total: number) => void;
  * A task is regressed if either half fails.
  *
  * A PASS here means the current task corpus did not detect a regression on
- * this run -- it is not a general
- * guarantee, and every terminal/JSON report states this limitation
- * (see src/report/terminal.ts).
+ * this run -- it is not a general guarantee, and every terminal/JSON report
+ * states this limitation (see src/report/terminal.ts).
  */
 export async function runTt03(
   adapter: ProxyAdapter,
