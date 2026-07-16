@@ -9,16 +9,16 @@ export interface CountResult {
 
 // cl100k_base is the encoding used by GPT-4-class and Claude-adjacent
 // tokenizer approximations; js-tiktoken is a pure-JS port with no native
-// binary, MIT licensed, actively maintained -- the [Layer 1] boring choice
-// over hand-rolling a BPE tokenizer ([redacted], Step 0.4).
+// binary, MIT licensed, actively maintained -- the boring, low-risk choice
+// over hand-rolling a BPE tokenizer.
 const encoding = getEncoding('cl100k_base');
 
 /**
  * Counts tokens in `text` using a local tokenizer -- no network calls, no
  * per-run inference cost. Never throws: malformed/non-UTF8-looking input is
- * the named failure path ([redacted] architecture section) and must return
- * a skipped result rather than crash the batch. Callers (category modules)
- * are responsible for emitting a WARN and continuing the run.
+ * a named failure path that must return a skipped result rather than crash
+ * the batch. Callers (category modules) are responsible for emitting a WARN
+ * and continuing the run.
  */
 export function count(text: string): CountResult {
   if (text.length === 0) {
