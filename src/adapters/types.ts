@@ -21,7 +21,7 @@ export interface ProxyAdapter {
 }
 
 /**
- * Locked error message format ([redacted], user-confirmed verbatim):
+ * Locked error message format (user-confirmed verbatim):
  * "<proxy> not found on PATH. Install: <install command>. Then re-run this command."
  */
 export class MissingBinaryError extends Error {
@@ -47,9 +47,9 @@ export class MissingBinaryError extends Error {
  * which the tokenizer then counts as near-zero tokens, making TT01 report
  * an implausible ~100% reduction that reads as "even better than promised"
  * when it is actually a broken measurement. Failing loudly here, instead of
- * silently reporting that fabricated number, is what [redacted]
- * Anti-Sycophancy Rule #1 requires ("never state a measured number without
- * the command that produced it actually succeeding").
+ * silently reporting that fabricated number, is required: never state a
+ * measured number without the command that produced it actually
+ * succeeding.
  */
 export class ProxyExecutionError extends Error {
   readonly proxyName: ProxyName;
