@@ -100,9 +100,9 @@ describe('runLiveVerification -- CRITICAL: zero API calls when the gate disallow
 
     // The CLI orchestration layer (src/verify.ts) never calls
     // runLiveVerification() when evaluateLiveGate() returns allowed: false --
-    // asserting that directly here (not just the gate's return value) is
-    // what the [redacted] test plan requires: "must assert no network/API
-    // call fired, not just exit code."
+    // asserting that directly here (not just the gate's return value)
+    // matters because this is a CRITICAL path: the test must assert no
+    // network/API call fired, not just that the exit code is correct.
     if (gate.allowed) {
       await runLiveVerification([{ id: 't1', contextText: 'x' }], 'fake-key', 5, client);
     }
