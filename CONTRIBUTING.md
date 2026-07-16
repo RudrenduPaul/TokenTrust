@@ -7,10 +7,11 @@ needs a reproducible fixture behind it, not just a passing type-checker.
 
 ## Before you start
 
-- Read `[redacted]` in the repo root — it has the engineering standards and
-  anti-sycophancy rules this project holds itself to (no measurement number
-  without a fixture-run behind it, claimed vs. measured always kept separate,
-  cross-tool comparisons only across identical corpora).
+- This project measures whether a token/context-reduction proxy actually
+  saves what it claims, so it holds itself to a few non-negotiable rules: no
+  measurement number is reported without a fixture-run behind it, claimed
+  vs. measured savings are always kept separate, and cross-tool comparisons
+  only ever run across identical corpora.
 - Run the full check suite locally before opening a PR:
 
   ```bash
@@ -40,7 +41,7 @@ action/
 
 ## How to add a verification category
 
-TT01-TT05 are locked for v0.1 (see the architecture notes in `[redacted]`).
+TT01-TT05 are locked for v0.1.
 Adding a **new** category (TT06+) is a v0.2+ discussion — open an issue first
 so the methodology gets reviewed before code is written. If you're fixing or
 extending an existing category:
@@ -53,10 +54,9 @@ extending an existing category:
    behavior you're testing.
 2. Fix or extend the category logic in `src/categories/tt0N_*.ts`.
 3. Re-run `npm run test:coverage` and confirm the category file is still at
-   or above **95% coverage** — this is a hard floor for TT01-TT05 specifically
-   (see `[redacted]`, "Engineering Standards"), since a wrong measurement here
-   is the exact failure mode this tool exists to catch in other people's
-   tools.
+   or above **95% coverage** — this is a hard floor for TT01-TT05
+   specifically, since a wrong measurement here is the exact failure mode
+   this tool exists to catch in other people's tools.
 4. If your change affects a number shown in the README, re-run
    `npx tokentrust-cli verify` against the bundled fixture corpus and update the
    README with the real output — never hand-type a measurement.
@@ -96,9 +96,9 @@ repo per task under `fixtures/repos/<task-id>/`. To add a task:
 
 ## How to add support for a new proxy
 
-`src/adapters/registry.ts` hardcodes the two supported proxies on purpose
-(see `[redacted]` and the architecture notes — this is a small named registry,
-not a generic plugin system, because two known proxies don't need one).
+`src/adapters/registry.ts` hardcodes the two supported proxies on purpose —
+this is a small named registry, not a generic plugin system, because two
+known proxies don't need one.
 Adding a third proxy means:
 
 1. Implement the `ProxyAdapter` interface (`src/adapters/types.ts`) in a new
@@ -106,16 +106,17 @@ Adding a third proxy means:
    `headroom.ts`.
 2. Register it in `src/adapters/registry.ts`.
 3. Add adapter-level tests covering: `isInstalled()` true/false, `run()` happy
-   path, and the missing-binary error path (this is a CRITICAL path — see the
-   test plan referenced in `[redacted]`).
-4. This is a "changes how token counts, cost deltas, or regression thresholds
-   are computed" — style change per `[redacted]`'s planning rules: write a
-   short plan before implementing.
+   path, and the missing-binary error path (this is a CRITICAL path that must
+   stay covered).
+4. Changes that alter how token counts, cost deltas, or regression
+   thresholds are computed deserve a short written plan before you start
+   implementing.
 
 ## Commit and PR expectations
 
 - Every category or measurement-logic change needs a fixture behind it —
-  see `[redacted]`'s anti-sycophancy rule 1.
+  never report a measurement number without a fixture run actually
+  producing it.
 - Don't suppress lint or type errors without a comment explaining why.
 - Update `CHANGELOG.md` for any change to public CLI behavior, flags, or
   report schema.
