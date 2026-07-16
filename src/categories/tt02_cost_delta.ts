@@ -32,8 +32,8 @@ export interface Tt02Result {
 /**
  * TT02 Cost-Savings Delta (default path) -- computes actual dollar-cost
  * savings at current published model pricing from TT01's measured token
- * delta. This is the free, local-only path: no API calls, matches the
- * [redacted] C1 cost gate (near-zero marginal cost per run).
+ * delta. This is the free, local-only path: no API calls, near-zero
+ * marginal cost per run.
  */
 export function runTt02Default(
   perTask: Tt01TaskResult[],
@@ -63,12 +63,12 @@ export function runTt02Default(
 }
 
 // ---------------------------------------------------------------------------
-// --live mode: opt-in provider-billed verification ([redacted] correction 3,
-// [redacted] resolution (d)). This is the one real security/cost boundary in
-// the system -- see the locked gate diagram below. No import here ever
-// reaches for an API key or fires a network call outside evaluateLiveGate's
-// `allowed: true` branch and runLiveVerification, both of which the CLI only
-// invokes after the gate has already returned allowed: true.
+// --live mode: opt-in provider-billed verification. This is the one real
+// security/cost boundary in the system -- see the locked gate diagram below.
+// No import here ever reaches for an API key or fires a network call outside
+// evaluateLiveGate's `allowed: true` branch and runLiveVerification, both of
+// which the CLI only invokes after the gate has already returned
+// allowed: true.
 // ---------------------------------------------------------------------------
 
 export const LIVE_API_KEY_ENV_VAR = 'TOKENTRUST_LIVE_API_KEY';
@@ -102,7 +102,7 @@ export function estimateLiveCost(
 }
 
 /**
- * Locked gate ([redacted] resolution (d)):
+ * Locked gate:
  *
  *   --live alone            -> refuse, print cost estimate, EXIT 1, no API call
  *   --live --confirm-cost,
@@ -113,8 +113,8 @@ export function estimateLiveCost(
  * This function makes no network call under any branch -- it only decides
  * whether the caller (cli.ts) may proceed to runLiveVerification. Tests
  * assert zero calls to the live API client when this returns allowed: false,
- * not merely that the CLI's exit code is 1 (CRITICAL path, [redacted] test
- * plan).
+ * not merely that the CLI's exit code is 1 -- this is a CRITICAL path, so
+ * the stronger assertion matters.
  */
 export function evaluateLiveGate(
   options: LiveModeOptions,
