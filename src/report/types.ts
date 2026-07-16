@@ -3,9 +3,9 @@ import type { ProxyName } from '../adapters/types.js';
 export type CategoryId = 'TT01' | 'TT02' | 'TT03' | 'TT04' | 'TT05';
 
 /**
- * Structured, versioned measurement record -- the [redacted] from the
- * [redacted] (Section 8). Every benchmark run, even in the free CLI,
- * produces this record so a `prior_run_id` chain can exist from day one.
+ * Structured, versioned measurement record. Every benchmark run, even in
+ * the free CLI, produces this record so a `prior_run_id` chain can exist
+ * from day one.
  */
 export interface ReportRecord {
   run_id: string;
@@ -39,7 +39,7 @@ export interface FullReport {
   repo: string;
   task_corpus_size: number;
   proxies: ProxyName[];
-  /** TT01/TT02/TT04 records, matching the [redacted] [redacted] (Section 8). */
+  /** TT01/TT02/TT04 records, matching the ReportRecord shape above. */
   records: ReportRecord[];
   /** TT03 doesn't fit the "measured_savings_pct" record shape -- a guard, not a savings metric. */
   tt03: Partial<Record<ProxyName, Tt03ReportEntry>>;
