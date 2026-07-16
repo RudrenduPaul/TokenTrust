@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getClaimedSavings } from './claims.js';
 
 describe('getClaimedSavings', () => {
-  it('returns a sourced figure for rtk (the [redacted]-cited README claim)', () => {
+  it('returns a sourced figure for rtk (the README-cited claim)', () => {
     const claim = getClaimedSavings('rtk');
     expect(claim.pct).toBe(70);
     expect(claim.label).toContain('rtk README');
