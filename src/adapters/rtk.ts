@@ -6,9 +6,9 @@ import type { ProxyName } from './types.js';
 
 /**
  * rtk is a Rust binary (single static binary, no Node runtime, no shared
- * dependencies with TokenTrust itself) -- invoked as an external process.
- * See [redacted] "Language" note: this is why TokenTrust shells out rather
- * than importing rtk as a library.
+ * dependencies with TokenTrust itself) -- invoked as an external process
+ * rather than imported as a library, since there is no JS/TS binding for
+ * it and shelling out is simpler and more reliable than writing one.
  *
  * rtk has no generic "compress arbitrary stdin" command. Its real CLI
  * surface (confirmed against the installed rtk 0.43.0 binary) is:
