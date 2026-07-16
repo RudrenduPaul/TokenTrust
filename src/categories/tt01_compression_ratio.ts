@@ -26,9 +26,9 @@ export type ProgressCallback = (done: number, total: number) => void;
  * reduction on a labeled task corpus with a real local tokenizer, compared
  * against the proxy's own claimed/marketed reduction percentage.
  *
- * Named failure path ([redacted]): if the tokenizer flags a task's before or
- * after text as malformed/non-UTF8, that task is skipped with a WARN and the
- * batch continues -- it never crashes the run.
+ * Named failure path: if the tokenizer flags a task's before or after text
+ * as malformed/non-UTF8, that task is skipped with a WARN and the batch
+ * continues -- it never crashes the run.
  */
 export async function runTt01(
   adapter: ProxyAdapter,
