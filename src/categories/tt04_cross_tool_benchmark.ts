@@ -22,10 +22,9 @@ export interface Tt04Result {
 
 /**
  * TT04 Cross-Tool Comparative Benchmark -- runs the identical task corpus
- * through every supported proxy side by side. [redacted] anti-sycophancy
- * rule 4: a cross-tool comparison is only valid if every compared proxy ran
- * the exact same labeled tasks -- this throws rather than silently
- * comparing non-identical corpora.
+ * through every supported proxy side by side. A cross-tool comparison is
+ * only valid if every compared proxy ran the exact same labeled tasks --
+ * this throws rather than silently comparing non-identical corpora.
  *
  * The `perProxyResults` this module ever receives are already pre-filtered
  * by `runVerify()`'s dispatch loop, which excludes 'headroom' in v0.1 (see
