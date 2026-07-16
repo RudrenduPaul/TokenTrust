@@ -1,18 +1,17 @@
 # TokenTrust bundled default task corpus (v0.1).
 #
-# flags -- see the champion-tier TTHW decision in the [redacted]. 23 tasks,
-# varying difficulty (easy/medium/hard) and task type (bugfix/refactor/
-# docstring/feature-add), each pointing at a small, real fixture repo under
-# fixtures/repos/<task-id>/ -- not synthetic placeholder text. 9 of the 23
-# are filter-tagged tasks that measure rtk's real `rtk pipe --filter`
-# stdin-based invocation against real captured tool output (git log, git
-# diff, vitest run, go-test, go-build, tsc, grep, find, git-status, log,
-# pytest); the other 12 stay file-based (`rtk read -l aggressive`) exactly
-# as before.
+# 23 tasks, varying difficulty (easy/medium/hard) and task type (bugfix/
+# refactor/docstring/feature-add), each pointing at a small, real fixture
+# repo under fixtures/repos/<task-id>/ -- not synthetic placeholder text. 9
+# of the 23 are filter-tagged tasks that measure rtk's real
+# `rtk pipe --filter` stdin-based invocation against real captured tool
+# output (git log, git diff, vitest run, go-test, go-build, tsc, grep, find,
+# git-status, log, pytest); the other 12 stay file-based
+# (`rtk read -l aggressive`) exactly as before.
 #
-# Schema (locked, [redacted] resolution (a)): version, tasks[].id,
-# description, fixture_repo, prompt, difficulty are required. `type` and
-# `quality_markers` are additive optional fields (see CONTRIBUTING.md).
+# Schema: version, tasks[].id, description, fixture_repo, prompt, difficulty
+# are required. `type` and `quality_markers` are additive optional fields
+# (see CONTRIBUTING.md).
 version: 1
 tasks:
   - id: fix-typo-docstring
