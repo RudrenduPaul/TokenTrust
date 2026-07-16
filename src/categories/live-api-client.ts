@@ -7,10 +7,10 @@ const LIVE_MODEL = 'claude-3-5-haiku-latest';
 /**
  * Default --live API client: sends a single minimal message so the
  * provider's own response reports real, billed input-token usage for the
- * task's context text -- this is the "verify the estimate against a real
- * provider-billed total" step named in [redacted] (borrowing tokbench's
- * stronger meter). Only ever invoked after evaluateLiveGate has returned
- * { allowed: true } -- see tt02_cost_delta.ts.
+ * task's context text -- this is the step that verifies the local-tokenizer
+ * estimate against a real, provider-billed total (an approach borrowed from
+ * tokbench's stronger meter). Only ever invoked after evaluateLiveGate has
+ * returned { allowed: true } -- see tt02_cost_delta.ts.
  */
 export const anthropicLiveApiClient: LiveApiClient = async (
   taskId,
