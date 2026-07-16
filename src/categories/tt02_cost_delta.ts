@@ -64,11 +64,11 @@ export function runTt02Default(
 
 // ---------------------------------------------------------------------------
 // --live mode: opt-in provider-billed verification. This is the one real
-// security/cost boundary in
-// the system -- see the locked gate diagram below. No import here ever
-// reaches for an API key or fires a network call outside evaluateLiveGate's
-// `allowed: true` branch and runLiveVerification, both of which the CLI only
-// invokes after the gate has already returned allowed: true.
+// security/cost boundary in the system -- see the locked gate diagram below.
+// No import here ever reaches for an API key or fires a network call outside
+// evaluateLiveGate's `allowed: true` branch and runLiveVerification, both of
+// which the CLI only invokes after the gate has already returned
+// allowed: true.
 // ---------------------------------------------------------------------------
 
 export const LIVE_API_KEY_ENV_VAR = 'TOKENTRUST_LIVE_API_KEY';
