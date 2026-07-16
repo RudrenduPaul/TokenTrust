@@ -10,8 +10,7 @@ const LIVE_MODEL = 'claude-3-5-haiku-latest';
  * task's context text -- this is the step that verifies the local-tokenizer
  * estimate against a real, provider-billed total (an approach borrowed from
  * tokbench's stronger meter). Only ever invoked after evaluateLiveGate has
- * returned
- * { allowed: true } -- see tt02_cost_delta.ts.
+ * returned { allowed: true } -- see tt02_cost_delta.ts.
  */
 export const anthropicLiveApiClient: LiveApiClient = async (
   taskId,
