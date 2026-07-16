@@ -27,11 +27,11 @@ export interface LoadedStore {
 }
 
 /**
- * Named failure path: a missing or
- * corrupted store must degrade to "no drift comparison available," not
- * crash TT05. Missing is expected on a repo's first run (existed: false,
- * corrupted: false); corrupted (existed: true, corrupted: true) means the
- * file was present but not valid JSON / not the expected shape.
+ * Named failure path: a missing or corrupted store must degrade to "no
+ * drift comparison available," not crash TT05. Missing is expected on a
+ * repo's first run (existed: false, corrupted: false); corrupted (existed:
+ * true, corrupted: true) means the file was present but not valid JSON /
+ * not the expected shape.
  */
 export function loadReportStore(path: string): LoadedStore {
   if (!existsSync(path)) {
