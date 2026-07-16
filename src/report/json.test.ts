@@ -6,7 +6,7 @@ import { buildReportRecord, generateRunId, serializeReport, writeReport } from '
 import type { FullReport } from './types.js';
 
 describe('generateRunId', () => {
-  it('matches the strategy-doc example shape: tt_YYYY-MM-DD_<hex>', () => {
+  it('matches the documented run_id shape: tt_YYYY-MM-DD_<hex>', () => {
     const id = generateRunId(new Date('2026-07-11T09:14:52Z'));
     expect(id).toMatch(/^tt_2026-07-11_[0-9a-f]{6}$/);
   });
@@ -19,7 +19,7 @@ describe('generateRunId', () => {
   });
 });
 
-describe('buildReportRecord -- matches the [redacted] ([redacted] Section 8)', () => {
+describe('buildReportRecord -- matches the ReportRecord schema', () => {
   it('produces every locked field, rounds measured_savings_pct to 2 decimals', () => {
     const record = buildReportRecord({
       runId: 'tt_2026-07-11_4f2a9c',
