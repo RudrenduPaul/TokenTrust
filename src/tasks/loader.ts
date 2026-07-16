@@ -36,8 +36,8 @@ export class TaskSchemaError extends Error {
 
 /**
  * Loads and validates a tokentrust-tasks.yml file against the schema above.
- * Resolves each task's fixture_repo relative to
- * the corpus file's own directory, and confirms the fixture repo exists.
+ * Resolves each task's fixture_repo relative to the corpus file's own
+ * directory, and confirms the fixture repo exists.
  */
 export function loadTaskCorpus(corpusPath: string): Task[] {
   const absoluteCorpusPath = resolve(corpusPath);
