@@ -16,9 +16,9 @@ const encoding = getEncoding('cl100k_base');
 /**
  * Counts tokens in `text` using a local tokenizer -- no network calls, no
  * per-run inference cost. Never throws: malformed/non-UTF8-looking input is
- * a named failure path that must return
- * a skipped result rather than crash the batch. Callers (category modules)
- * are responsible for emitting a WARN and continuing the run.
+ * a named failure path that must return a skipped result rather than crash
+ * the batch. Callers (category modules) are responsible for emitting a WARN
+ * and continuing the run.
  */
 export function count(text: string): CountResult {
   if (text.length === 0) {
