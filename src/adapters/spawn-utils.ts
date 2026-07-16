@@ -8,8 +8,9 @@ export interface SpawnCaptureResult {
 
 /**
  * Shared child_process.spawn wrapper used by every proxy adapter. Node's
- * built-in spawn is the locked [Layer 1] choice ([redacted]) -- three
- * adapters don't justify pulling in execa or another process wrapper.
+ * built-in spawn is deliberately the only process-spawning mechanism used
+ * here -- three adapters don't justify pulling in execa or another process
+ * wrapper.
  *
  * Rejects with the raw spawn error (e.g. ENOENT when the binary isn't on
  * PATH) so callers can distinguish "not installed" from "ran and failed."
