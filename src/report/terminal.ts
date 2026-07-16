@@ -1,9 +1,9 @@
 import type { ProxyName } from '../adapters/types.js';
 
 /**
- * Locked progress-indicator format ([redacted], Post-[redacted] update):
- * a silent 30-45s pause during measurement reads as a hang against the
- * champion-tier <2-minute TTHW target, so this must be shown, not optional.
+ * Locked progress-indicator format: a silent 30-45s pause during
+ * measurement reads as a hang against the <2-minute time-to-hello-world
+ * target, so this must be shown, not optional.
  */
 export function renderProgress(done: number, total: number): string {
   return `Measuring... (${done}/${total} tasks)`;
