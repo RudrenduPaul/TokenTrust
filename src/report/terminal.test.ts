@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { printProgress, renderProgress, renderTerminalReport } from './terminal.js';
 
-describe('renderProgress -- locked format ([redacted] Post-[redacted] update)', () => {
+describe('renderProgress -- locked output format', () => {
   it('matches "Measuring... (N/total tasks)" verbatim', () => {
     expect(renderProgress(3, 12)).toBe('Measuring... (3/12 tasks)');
     expect(renderProgress(12, 12)).toBe('Measuring... (12/12 tasks)');
@@ -60,7 +60,7 @@ describe('renderTerminalReport', () => {
     expect(output).toContain('rtk is not the highest-measured performer');
     expect(output).toContain('[PASS]  TT05 Version-Drift Regression Check');
     expect(output).toContain('Report: ./tokentrust-report-2026-07-11.json');
-    // Anti-sycophancy rules baked into every report ([redacted] rules 3 and 6).
+    // Every report states its measurement is directional and run-specific, never a blanket guarantee.
     expect(output).toContain('directional measurement');
     expect(output).toContain('not a guarantee across all possible tasks');
   });
