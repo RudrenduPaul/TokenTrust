@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import type { CategoryId, FullReport, ReportRecord } from './types.js';
 import type { ProxyName } from '../adapters/types.js';
 
-/** Matches the [redacted] example run_id shape: tt_2026-07-11_4f2a9c */
+/** Produces the documented run_id shape: tt_2026-07-11_4f2a9c */
 export function generateRunId(now: Date = new Date()): string {
   const datePart = now.toISOString().slice(0, 10);
   const randomPart = randomBytes(3).toString('hex');
