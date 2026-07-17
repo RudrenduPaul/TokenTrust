@@ -18,10 +18,18 @@ task corpus instead of trusting the maintainer's own number.
 [![CI](https://github.com/RudrenduPaul/TokenTrust-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/RudrenduPaul/TokenTrust-CLI/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/tokentrust-cli.svg)](https://www.npmjs.com/package/tokentrust-cli)
+[![PyPI](https://img.shields.io/pypi/v/tokentrust-cli.svg)](https://pypi.org/project/tokentrust-cli/)
 
 </div>
 
 ## Install
+
+TokenTrust ships as two complementary, equally first-class distributions: an npm package for
+Node.js toolchains and a PyPI package for Python toolchains. Both install a `tokentrust` command
+with the identical CLI surface, the same TT01-TT05 verification categories, and the same bundled
+task corpus, so pick whichever matches your existing stack.
+
+**npm (Node.js):**
 
 ```sh
 npx tokentrust-cli verify --proxy rtk
@@ -29,6 +37,18 @@ npx tokentrust-cli verify --proxy rtk
 
 No clone, no local build. `npx` fetches the published package and runs it directly. To install
 it as a dependency instead: `npm install -g tokentrust-cli`.
+
+**pip (Python):**
+
+```sh
+pip install tokentrust-cli
+tokentrust verify --proxy rtk
+```
+
+See [python/README.md](./python/README.md) for the Python package's full documentation,
+including a note on the one real behavioral difference between the two: the npm package's
+`js-tiktoken` dependency bundles its tokenizer data for fully offline use, while the Python
+package's `tiktoken` dependency fetches and caches that same public data on first use.
 
 Real output from that exact command, run against the bundled 23-task corpus:
 
@@ -71,6 +91,7 @@ your machine with no clone required.
 - [What is TokenTrust, and why does it exist](#what-is-tokentrust-and-why-does-it-exist)
 - [FAQ](#faq)
 - [Real-world validation](#real-world-validation)
+- [Python package](#python-package)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -229,10 +250,22 @@ mechanism already does what the issue asked for. The issue's verdict moved from 
 genuine, re-verified pass as a direct result. TokenTrust never touched rtk's own repository; it
 got sharp enough to prove what was already true there.
 
+## Python package
+
+`pip install tokentrust-cli` installs the same `tokentrust` CLI as a genuine Python port, not a
+wrapper around the Node binary: real Python source under [python/src/tokentrust/](./python/src/tokentrust/),
+its own pytest suite, and the identical bundled 23-task corpus, copied verbatim into the wheel.
+Both distributions run the same `cl100k_base` tokenizer encoding, verified to produce identical
+token counts on real sample text, and both are maintained together going forward. See
+[python/README.md](./python/README.md) for install instructions, [python/docs/getting-started.md](./python/docs/getting-started.md)
+for a walkthrough, and [python/docs/concepts.md](./python/docs/concepts.md) for the verification
+methodology shared by both packages.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the project layout, how to add a verification
-category or fixture task, and the coverage bar every category change is held to.
+category or fixture task, and the coverage bar every category change is held to, for both the
+npm and PyPI packages.
 
 ## License
 

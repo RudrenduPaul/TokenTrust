@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tokentrust-cli"
+version = "0.2.0"
+description = "Vendor-neutral CLI that independently verifies the actual token/cost savings delivered by AI-coding-agent context-reduction proxies (rtk, headroom) against a real, labeled task corpus and a local tokenizer."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+authors = [
+  { name = "Rudrendu Paul" },
+  { name = "Sourav Nandy" },
+]
+keywords = ["token-reduction", "llm-cost", "benchmark", "cli", "ai-coding-agent", "verification", "tokenizer"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Utilities",
+]
+dependencies = [
+  "tiktoken>=0.7,<1",
+  "PyYAML>=6.0,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0,<9",
+  "build>=1.0,<2",
+  "twine>=5.0,<7",
+]
+
+[project.urls]
+Homepage = "https://github.com/RudrenduPaul/TokenTrust-CLI"
+Repository = "https://github.com/RudrenduPaul/TokenTrust-CLI"
+"Bug Tracker" = "https://github.com/RudrenduPaul/TokenTrust-CLI/issues"
+Changelog = "https://github.com/RudrenduPaul/TokenTrust-CLI/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/RudrenduPaul/TokenTrust-CLI/blob/main/python/docs/getting-started.md"
+"Author - Rudrendu Paul" = "https://github.com/RudrenduPaul"
+"Author - Sourav Nandy" = "https://github.com/Sourav-nandy-ai"
+
+[project.scripts]
+tokentrust = "tokentrust.cli:main"
+
+[tool.hatch.build]
+# This package lives in a subdirectory (python/) of a larger monorepo whose
+# .git directory is at the repo root, alongside the sibling npm package.
+# Hatchling's default VCS-aware file source walks up to that root .git and
+# pulls in root-level files like the Node/npm-specific .gitignore, which
+# has nothing to do with this Python package. ignore-vcs disables that
+# VCS-based default source so only the explicit include/only-include lists
+# below decide what ships -- verified by inspecting `tar tzf` /
+# `unzip -l` output before every publish (see CONTRIBUTING.md).
+ignore-vcs = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tokentrust"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+  "src/tokentrust",
+  "tests",
+  "README.md",
+  "LICENSE",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
