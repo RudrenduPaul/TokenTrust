@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -179,6 +179,33 @@ tasks:
 `);
     expect(() => loadTaskCorpus(path)).toThrow(TaskSchemaError);
     expect(() => loadTaskCorpus(path)).toThrow(/escapes the corpus file's own directory/);
+  });
+
+  it('CRITICAL: rejects a fixture_repo that is a symlink escaping the corpus directory (path-traversal bypass)', () => {
+    const outsideDir = mkdtempSync(join(tmpdir(), 'tokentrust-outside-'));
+    writeFileSync(join(outsideDir, 'secret.txt'), 'not for reading', 'utf8');
+    try {
+      mkdirSync(join(dir, 'repos'), { recursive: true });
+      const linkPath = join(dir, 'repos', 'evil-task');
+      try {
+        symlinkSync(outsideDir, linkPath, 'dir');
+      } catch {
+        return; // symlinks unsupported in this environment -- skip rather than fail
+      }
+      const path = writeCorpus(`
+version: 1
+tasks:
+  - id: t1
+    description: "desc"
+    fixture_repo: ./repos/evil-task
+    prompt: "do the thing"
+    difficulty: easy
+`);
+      expect(() => loadTaskCorpus(path)).toThrow(TaskSchemaError);
+      expect(() => loadTaskCorpus(path)).toThrow(/escapes the corpus file's own directory/);
+    } finally {
+      rmSync(outsideDir, { recursive: true, force: true });
+    }
   });
 
   it('rejects a task pointing at a non-existent fixture_repo', () => {

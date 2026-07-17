@@ -1,6 +1,23 @@
 import type { ProxyName } from '../adapters/types.js';
 
 /**
+ * Strips ANSI escape sequences and other C0/C1 control characters from a
+ * string before it's interpolated into terminal output. Task ids come from
+ * a task corpus, which may be downloaded from an untrusted source -- without
+ * this, a crafted id could hide text, spoof a status line, or reposition
+ * the cursor on the terminal it's printed to.
+ */
+function sanitizeForTerminal(value: string): string {
+  let out = '';
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code < 0x20 || code === 0x7f) continue;
+    out += ch;
+  }
+  return out;
+}
+
+/**
  * Locked progress-indicator format: a silent 30-45s pause during
  * measurement reads as a hang against the <2-minute time-to-hello-world
  * target, so this must be shown, not optional.
@@ -85,7 +102,7 @@ export function renderTerminalReport(input: TerminalReportInput): string {
       `  Measured (this repo, this corpus): ${t.measuredSavingsPct.toFixed(1)}% average reduction across ${t.taskCorpusSize} tasks`,
     );
     lines.push(
-      `  Range: ${t.minTask.pct.toFixed(1)}% (task: "${t.minTask.id}") to ${t.maxTask.pct.toFixed(1)}% (task: "${t.maxTask.id}")`,
+      `  Range: ${t.minTask.pct.toFixed(1)}% (task: "${sanitizeForTerminal(t.minTask.id)}") to ${t.maxTask.pct.toFixed(1)}% (task: "${sanitizeForTerminal(t.maxTask.id)}")`,
     );
     lines.push('');
   }

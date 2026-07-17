@@ -38,8 +38,9 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
     // (a) no rtk binary on PATH -> missing-binary message, exit 1;
     // (b) rtk installed but its compress invocation fails for some other
     //     reason -> ProxyExecutionError message, exit 1 (this was the exact
-    //     path that reproduced the live-audit's false ~100%-reduction bug
-    //     before that fix, and predates the rtk adapter rewrite below);
+    //     path that reproduced a false ~100%-reduction bug found during
+    //     manual end-to-end testing of the compiled CLI, before that fix,
+    //     and predates the rtk adapter rewrite below);
     // (c) rtk installed and the adapter's real `pipe --filter` / `read -l
     //     aggressive` invocation succeeds -> a real TT01 report prints and
     //     the process exits 0. All three prove the CLI actually executed
@@ -72,11 +73,12 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
   });
 
   it(
-    'runs `node dist/cli.js verify --help` and prints clean usage, exiting 0 -- regression for a live-audit ' +
-      'bug where this threw an unhandled ERR_PARSE_ARGS_UNKNOWN_OPTION Node stack trace instead of printing ' +
-      "usage, because node:util's parseArgs() is strict by default and --help was never declared in its " +
-      'options schema. Only a real subprocess invocation exercises this -- unit tests calling parseCliFlags() ' +
-      'or main() directly never go through the compiled binary the way a user actually invokes it.',
+    'runs `node dist/cli.js verify --help` and prints clean usage, exiting 0 -- regression for a bug found ' +
+      'during manual end-to-end testing of the compiled CLI, where this threw an unhandled ' +
+      "ERR_PARSE_ARGS_UNKNOWN_OPTION Node stack trace instead of printing usage, because node:util's " +
+      "parseArgs() is strict by default and --help was never declared in its options schema. Only a real " +
+      'subprocess invocation exercises this -- unit tests calling parseCliFlags() or main() directly never ' +
+      'go through the compiled binary the way a user actually invokes it.',
     () => {
       let stdout = '';
       let stderr = '';

@@ -6,6 +6,29 @@ export interface SpawnCaptureResult {
   code: number | null;
 }
 
+export interface SpawnCaptureOptions {
+  /** Kill the child and reject if it hasn't exited within this many ms. */
+  timeoutMs?: number;
+}
+
+const DEFAULT_TIMEOUT_MS = 60_000;
+
+// Env var NAMES matching this are dropped before the child process is
+// spawned -- rtk/headroom are third-party binaries this project doesn't
+// control, and without this they'd otherwise inherit every secret sitting
+// in the parent's environment (NPM_TOKEN, PYPI_TOKEN, GITHUB_TOKEN,
+// ANTHROPIC_API_KEY, ...) on every single call, not just --live mode.
+const SENSITIVE_ENV_NAME_PATTERN = /token|secret|key|password|passwd|credential/i;
+
+function scrubEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const scrubbed: NodeJS.ProcessEnv = {};
+  for (const [name, value] of Object.entries(env)) {
+    if (value === undefined || SENSITIVE_ENV_NAME_PATTERN.test(name)) continue;
+    scrubbed[name] = value;
+  }
+  return scrubbed;
+}
+
 /**
  * Shared child_process.spawn wrapper used by every proxy adapter. Node's
  * built-in spawn is deliberately the only process-spawning mechanism used
@@ -14,17 +37,29 @@ export interface SpawnCaptureResult {
  *
  * Rejects with the raw spawn error (e.g. ENOENT when the binary isn't on
  * PATH) so callers can distinguish "not installed" from "ran and failed."
+ * Also rejects (rather than hanging forever) if the child doesn't exit
+ * within timeoutMs, and never hands the child the parent's full
+ * environment -- see scrubEnv above.
  */
 export function spawnCapture(
   binary: string,
   args: string[],
   input?: string,
+  options?: SpawnCaptureOptions,
 ): Promise<SpawnCaptureResult> {
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   return new Promise((resolvePromise, reject) => {
     let settled = false;
-    const child = spawn(binary, args);
+    let timedOut = false;
+    const child = spawn(binary, args, { env: scrubEnv(process.env) });
     let stdout = '';
     let stderr = '';
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGKILL');
+    }, timeoutMs);
+    timer.unref?.();
 
     child.stdout?.on('data', (chunk: Buffer) => {
       stdout += chunk.toString('utf8');
@@ -35,11 +70,17 @@ export function spawnCapture(
     child.on('error', (err) => {
       if (settled) return;
       settled = true;
+      clearTimeout(timer);
       reject(err);
     });
     child.on('close', (code) => {
       if (settled) return;
       settled = true;
+      clearTimeout(timer);
+      if (timedOut) {
+        reject(new Error(`Process "${binary}" timed out after ${timeoutMs}ms and was killed.`));
+        return;
+      }
       resolvePromise({ stdout, stderr, code });
     });
 

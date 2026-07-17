@@ -306,7 +306,7 @@ describe('runVerify', () => {
     });
   });
 
-  describe('headroom: v0.1 CLI-level not-yet-supported gate (Decision 2)', () => {
+  describe('headroom: v0.1 CLI-level not-yet-supported gate', () => {
     it('--proxy headroom alone: exits 1 with the documented message, never constructs the headroom adapter', async () => {
       const getAdapter = vi.fn((name: ProxyName) =>
         new FakeAdapter(name, { baseline: () => '', compressed: () => '' }),

@@ -3,7 +3,7 @@
 > vitest run src/adapters/registry.test.ts
 
 
- RUN  v4.1.10 /private/tmp/claude-501/-Users-Rudrendu-All-Mac-project-code-VS-Code-oss-ideas-execution-strategy/bcb5c602-bfc8-4db1-b485-5e9b16b95d96/scratchpad/tokentrust-scope-fix
+ RUN  v4.1.10 /home/runner/work/tokentrust-cli/tokentrust-cli
 
 
  Test Files  1 passed (1)

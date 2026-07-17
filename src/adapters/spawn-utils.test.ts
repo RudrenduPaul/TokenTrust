@@ -27,6 +27,33 @@ describe('spawnCapture', () => {
     const { code } = await spawnCapture(process.execPath, ['-e', 'process.exit(3)']);
     expect(code).toBe(3);
   });
+
+  it('kills a hung child and rejects once it exceeds timeoutMs', async () => {
+    await expect(
+      spawnCapture(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], undefined, { timeoutMs: 200 }),
+    ).rejects.toThrow(/timed out/);
+  });
+
+  it('does not pass sensitive env vars through to the child process', async () => {
+    process.env.TOKENTRUST_TEST_SECRET_TOKEN = 'super-secret-value';
+    try {
+      const { stdout } = await spawnCapture(process.execPath, [
+        '-e',
+        'process.stdout.write(String("TOKENTRUST_TEST_SECRET_TOKEN" in process.env))',
+      ]);
+      expect(stdout).toBe('false');
+    } finally {
+      delete process.env.TOKENTRUST_TEST_SECRET_TOKEN;
+    }
+  });
+
+  it('still passes PATH through to the child process (not scrubbed)', async () => {
+    const { stdout } = await spawnCapture(process.execPath, [
+      '-e',
+      'process.stdout.write(String("PATH" in process.env || "Path" in process.env))',
+    ]);
+    expect(stdout).toBe('true');
+  });
 });
 
 describe('isEnoent', () => {
