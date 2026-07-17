@@ -1,9 +1,63 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
+All notable changes to this project are documented in this file. This file covers both the npm
+package (`tokentrust-cli`, TypeScript, repo root) and the PyPI package (`tokentrust-cli`,
+Python, `python/`) -- since they run the same verification categories against the same task
+corpus, entries note which distribution they apply to.
 
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
+
+## [Python 0.2.0] - 2026-07-17
+
+Initial public release of the Python port, published to PyPI as `tokentrust-cli`
+(`pip install tokentrust-cli`). Complementary to, not a replacement for, the existing npm
+package -- both are first-class and maintained together, and both ship the version-matched
+`0.2.0` verification logic (the two-proxy `rtk`/`headroom` registry, the `ProxyName` shape after
+the third adapter's removal). See `python/README.md` for Python-specific usage.
+
+### Added
+
+- `tokentrust verify --proxy <name> [options]` CLI (console script `tokentrust`, package
+  `tokentrust`), with the same flags, defaults, and `--help` text as the npm CLI: `--repo`,
+  `--tasks`, `--live`, `--confirm-cost`, `--live-max-tasks` (default 5), `--format`
+  (terminal/json).
+- Programmatic library API: `from tokentrust.verify import run_verify, VerifyOptions,
+  VerifyDependencies`, returning the same `VerifyOutcome` shape (`exit_code`, `report_path`,
+  `report`) as the underlying pipeline the CLI itself calls.
+- TT01-TT05 verification categories reimplemented as genuine Python logic against the same
+  `fixtures/tasks.yml` corpus (23 tasks) bundled inside the npm package, copied verbatim into
+  the Python wheel -- the two distributions read byte-identical fixture content.
+- Local tokenizer wrapper using `tiktoken` (`cl100k_base` encoding), verified to produce
+  byte-for-byte identical token counts to the npm package's `js-tiktoken` dependency on real
+  sample text before this port shipped (see `CONTRIBUTING.md`'s tokenizer-parity note). One real
+  behavioral difference: `tiktoken` fetches and caches the `cl100k_base` rank data from a public
+  endpoint on first use in a fresh environment, where `js-tiktoken` bundles the same data inside
+  the npm package for fully offline operation from the first run -- documented in
+  `python/docs/getting-started.md`.
+- `rtk` and `headroom` proxy adapters, each shelling out to the proxy binary via
+  `subprocess.run`, mirroring the npm package's `child_process.spawn`-based `BaseAdapter`.
+  `headroom` remains recognized but not yet drivable in v0.1, for the same real reason as the
+  npm package: its CLI surface is an HTTP proxy server, not a one-shot compress command.
+- Structured JSON report writer and human-readable terminal report, with a live progress
+  indicator during measurement -- output format matches the npm CLI line for line (aside from
+  the underlying language's default whitespace/serialization conventions).
+- Full pytest suite (100+ tests) ported from the TypeScript vitest suite, covering the
+  tokenizer's named failure path, task-corpus schema validation (including the
+  path-traversal/absolute-path security checks), every TT01-TT05 category, the CLI flag parser,
+  and an end-to-end `run_verify()` pass with an injected fake adapter -- all TT01-TT05 category
+  modules at 99-100% statement coverage.
+- `docs/getting-started.md`, `docs/concepts.md`, and `docs/integrations/ci.md`, plus three
+  runnable `examples/` scripts (basic verify, a JSON-report CI gate, and a direct TT04
+  cross-tool-comparison call) using the real library API.
+
+### Verified
+
+- A live run of this Python package's `tokentrust verify --proxy rtk` against the real,
+  installed `rtk 0.43.0` binary and the bundled 23-task corpus produced measured numbers
+  identical to the npm package's `dist/cli.js` run against the same corpus at the same moment:
+  60.7% average TT01 reduction, the same min/max tasks and percentages, and 2/23 TT03
+  regressions -- see `python/docs/getting-started.md`'s real captured output.
 
 ## [0.2.0] - 2026-07-15
 

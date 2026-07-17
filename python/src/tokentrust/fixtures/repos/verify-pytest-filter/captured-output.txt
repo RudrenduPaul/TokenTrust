@@ -1,0 +1,30 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-8.4.2, pluggy-1.6.0 -- /opt/homebrew/opt/python@3.14/bin/python3.14
+cachedir: .pytest_cache
+rootdir: /tmp/tokentrust-fix/fixtures/repos/verify-pytest-filter
+collecting ... collected 3 items
+
+test_discount.py::test_apply_discount_ten_percent PASSED                 [ 33%]
+test_discount.py::test_apply_discount_zero_percent PASSED                [ 66%]
+test_discount.py::test_apply_discount_negative_percent_raises FAILED     [100%]
+
+=================================== FAILURES ===================================
+_________________ test_apply_discount_negative_percent_raises __________________
+
+    def test_apply_discount_negative_percent_raises():
+>       assert apply_discount(50, -5) == 47.5
+
+test_discount.py:16:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+price = 50, percent = -5
+
+    def apply_discount(price, percent):
+        if percent < 0 or percent > 100:
+>           raise ValueError("percent must be between 0 and 100")
+E           ValueError: percent must be between 0 and 100
+
+test_discount.py:3: ValueError
+=========================== short test summary info ============================
+FAILED test_discount.py::test_apply_discount_negative_percent_raises - ValueError: percent must be between 0 and 100
+========================= 1 failed, 2 passed in 0.06s ==========================

@@ -1,0 +1,13 @@
+
+> tokentrust@0.1.0 test
+> vitest run src/adapters/registry.test.ts
+
+
+ RUN  v4.1.10 /private/tmp/claude-501/-Users-Rudrendu-All-Mac-project-code-VS-Code-oss-ideas-execution-strategy/bcb5c602-bfc8-4db1-b485-5e9b16b95d96/scratchpad/tokentrust-scope-fix
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  23:21:44
+   Duration  132ms (transform 31ms, setup 0ms, import 63ms, tests 2ms, environment 0ms)
+

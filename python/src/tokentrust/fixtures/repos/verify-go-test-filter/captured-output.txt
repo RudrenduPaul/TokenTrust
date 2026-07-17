@@ -1,0 +1,17 @@
+{"Time":"2026-07-12T16:37:55.902665-07:00","Action":"start","Package":"verify-go-test-filter"}
+{"Time":"2026-07-12T16:37:56.179545-07:00","Action":"run","Package":"verify-go-test-filter","Test":"TestMultiplyPositive"}
+{"Time":"2026-07-12T16:37:56.179612-07:00","Action":"output","Package":"verify-go-test-filter","Test":"TestMultiplyPositive","Output":"=== RUN   TestMultiplyPositive\n"}
+{"Time":"2026-07-12T16:37:56.179652-07:00","Action":"output","Package":"verify-go-test-filter","Test":"TestMultiplyPositive","Output":"--- PASS: TestMultiplyPositive (0.00s)\n"}
+{"Time":"2026-07-12T16:37:56.179661-07:00","Action":"pass","Package":"verify-go-test-filter","Test":"TestMultiplyPositive","Elapsed":0}
+{"Time":"2026-07-12T16:37:56.179671-07:00","Action":"run","Package":"verify-go-test-filter","Test":"TestMultiplyZero"}
+{"Time":"2026-07-12T16:37:56.179673-07:00","Action":"output","Package":"verify-go-test-filter","Test":"TestMultiplyZero","Output":"=== RUN   TestMultiplyZero\n"}
+{"Time":"2026-07-12T16:37:56.179676-07:00","Action":"output","Package":"verify-go-test-filter","Test":"TestMultiplyZero","Output":"--- PASS: TestMultiplyZero (0.00s)\n"}
+{"Time":"2026-07-12T16:37:56.179679-07:00","Action":"pass","Package":"verify-go-test-filter","Test":"TestMultiplyZero","Elapsed":0}
+{"Time":"2026-07-12T16:37:56.179681-07:00","Action":"run","Package":"verify-go-test-filter","Test":"TestMultiplyNegative"}
+{"Time":"2026-07-12T16:37:56.179683-07:00","Action":"output","Package":"verify-go-test-filter","Test":"TestMultiplyNegative","Output":"=== RUN   TestMultiplyNegative\n"}
+{"Time":"2026-07-12T16:37:56.179685-07:00","Action":"output","Package":"verify-go-test-filter","Test":"TestMultiplyNegative","Output":"    calc_test.go:26: Multiply(-2, 3) = -6; want -7 (deliberately wrong expectation)\n"}
+{"Time":"2026-07-12T16:37:56.179696-07:00","Action":"output","Package":"verify-go-test-filter","Test":"TestMultiplyNegative","Output":"--- FAIL: TestMultiplyNegative (0.00s)\n"}
+{"Time":"2026-07-12T16:37:56.179698-07:00","Action":"fail","Package":"verify-go-test-filter","Test":"TestMultiplyNegative","Elapsed":0}
+{"Time":"2026-07-12T16:37:56.1797-07:00","Action":"output","Package":"verify-go-test-filter","Output":"FAIL\n"}
+{"Time":"2026-07-12T16:37:56.18054-07:00","Action":"output","Package":"verify-go-test-filter","Output":"FAIL\tverify-go-test-filter\t0.276s\n"}
+{"Time":"2026-07-12T16:37:56.180558-07:00","Action":"fail","Package":"verify-go-test-filter","Elapsed":0.278}
