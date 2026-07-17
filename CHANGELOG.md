@@ -8,6 +8,22 @@ corpus, entries note which distribution they apply to.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [Python 0.2.1] - 2026-07-16
+
+Docs-only patch release. No source or behavior changes.
+
+### Changed
+
+- `python/README.md` expanded from a thin 114-line quickstart into the full reference-depth
+  structure other ported packages in this project use: added a real "Why this exists" section
+  (independently verifying rtk/headroom's own reported token and cost savings against a real
+  local tokenizer and labeled task corpus, grounded in the same real `rtk` issue-tracker evidence
+  the npm README cites), a real "Security" section (subprocess invocation with no shell, the
+  `TOKENTRUST_LIVE_API_KEY` env-var-only credential path for opt-in `--live` mode, disclosure via
+  GitHub Security Advisories, and an honest statement of what security automation is and isn't
+  configured today), and a real "CI integration" section (a runnable GitHub Actions example gating
+  a build on `tokentrust verify`'s exit code and JSON report). No other section was changed.
+
 ## [Python 0.2.0] - 2026-07-17
 
 Initial public release of the Python port, published to PyPI as `tokentrust-cli`

@@ -13,6 +13,29 @@ teams can `pip install` instead of pulling in Node.js.
 [![PyPI](https://img.shields.io/pypi/v/tokentrust-cli.svg)](https://pypi.org/project/tokentrust-cli/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](../LICENSE)
 
+## Why this exists
+
+Context-reduction proxies for AI coding agents (`rtk`, `headroom`, and others) publish their own
+compression and cost-savings numbers, measured on the maintainer's own workload, with nobody
+outside the project checking the math. That's not an accusation, it's just how every proxy in
+this space currently reports its own numbers, and a maintainer benchmarking their own tool isn't
+running an adversarial test.
+
+The gap shows up in the proxies' own issue trackers: an open, 5-repo, 2,100-measurement empirical
+benchmark thread asking how rtk's actual savings compare to what it claims
+([`rtk#839`](https://github.com/rtk-ai/rtk/issues/839)), a report that rtk's own `gain` command
+hallucinates token usage and savings ([`rtk#1935`](https://github.com/rtk-ai/rtk/issues/1935)),
+and a cost regression a maintainer's own test suite didn't catch on its own
+([`rtk#582`](https://github.com/rtk-ai/rtk/issues/582), "RTK Hook Increases Claude Code Costs by
+18%"). TT05 exists specifically to catch that last class of regression before a user does.
+
+TokenTrust doesn't compete with these proxies, it verifies them: a real local tokenizer
+(`tiktoken`, `cl100k_base`), a real, bundled, labeled 23-task corpus, and a real subprocess
+invocation of the proxy binary itself, not a re-run of the vendor's own benchmark script. Every
+category run prints the claimed number right next to the measured one, so the comparison is never
+hidden or averaged away. This package is the Python port of that same verification logic, for
+teams that don't want a Node.js dependency in their pipeline just to run it.
+
 ## Install
 
 ```sh
@@ -95,6 +118,74 @@ package, so the Node CLI works fully offline from its very first run. `tiktoken`
 caches that same public rank data from OpenAI's servers on its first use in a given environment
 (set `TIKTOKEN_CACHE_DIR` to control where); every run after that first one uses the local cache
 and needs no network. See [docs/getting-started.md](./docs/getting-started.md) for details.
+
+## CI integration
+
+There's no bundled GitHub Action for the Python package (the npm package has one, see the
+[project README](https://github.com/RudrenduPaul/TokenTrust-CLI#readme)). Wire it into any CI
+system as a plain step, and use `--format json` plus the exit code to gate a build:
+
+```yaml
+# .github/workflows/tokentrust.yml
+name: TokenTrust verify
+on: [pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install tokentrust-cli
+      - run: curl -fsSL https://rtk-ai.app/install.sh | sh
+      - run: tokentrust verify --proxy rtk --format json > tokentrust-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tokentrust-report
+          path: tokentrust-report.json
+```
+
+`tokentrust verify` exits `0` on a completed run with no gated failure (a `--live` cost-gate
+refusal, a task-schema error, or a corpus mismatch) and non-zero otherwise. A TT03 or TT05 FAIL is
+reported in the JSON output but does not by itself fail the process exit code, so to hard-fail CI
+on a version-drift regression specifically, gate on the report's `tt05` entries instead, the same
+way the npm package's bundled GitHub Action does, see
+[examples/02-json-report-ci-gate](./examples/02-json-report-ci-gate) for a complete, runnable
+version of exactly that check against this package's `run_verify()` API. Full walkthrough,
+including caching the `tiktoken` tokenizer download between CI runs, is in
+[docs/integrations/ci.md](./docs/integrations/ci.md).
+
+## Security
+
+TokenTrust shells out to the `rtk` and `headroom` proxy binaries as unprivileged child processes
+using Python's `subprocess.run` with an argument list (never `shell=True`), so proxy output and
+task/fixture content can't reach a shell. It never sends task content, repo data, or measurement
+results anywhere by default, and makes exactly one network call outside of opt-in `--live`
+mode: `tiktoken` fetching the public, non-sensitive `cl100k_base` rank data from OpenAI's servers
+on first use in a fresh environment (see [docs/getting-started.md](./docs/getting-started.md)),
+cached locally after that.
+
+The one credential this package ever handles is your own Anthropic API key for opt-in `--live`
+mode, which verifies TT02's cost estimate against a real, provider-billed sample. That key is read
+only from the `TOKENTRUST_LIVE_API_KEY` environment variable, never accepted as a CLI flag (so it
+never lands in shell history or a process list), and used for nothing but the single billed
+request `--live` makes per sampled task, capped at 5 tasks by default and always gated behind an
+explicit `--confirm-cost` before any call is made.
+
+Security reports involving credential handling, command injection through task/fixture input, or
+JSON report parsing are especially high priority. Vulnerabilities in the third-party proxy
+binaries (`rtk`, `headroom`) themselves are out of scope for this repository, report those
+directly to the respective project. To report a vulnerability privately, see
+[SECURITY.md](../SECURITY.md) for the disclosure process, or use
+[GitHub Security Advisories](https://github.com/RudrenduPaul/TokenTrust-CLI/security/advisories/new).
+**Honest note**: this project does not currently publish SLSA provenance, Sigstore signatures, or
+an SBOM, and has no OpenSSF Scorecard badge set up, for either distribution. CI runs `npm audit
+--audit-level=high` on every pull request touching the npm package; there is no equivalent
+automated dependency-audit step wired into CI for the Python package yet, its dependencies are
+pinned to bounded version ranges (`tiktoken>=0.7,<1`, `PyYAML>=6.0,<7`) in
+[pyproject.toml](./pyproject.toml) instead.
 
 ## Development
 
