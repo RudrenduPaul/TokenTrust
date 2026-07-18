@@ -97,6 +97,14 @@ class VerifyDependencies:
     print_fn: Optional[Callable[[str], None]] = None
     env: Optional[Dict[str, str]] = None
     report_out_path: Optional[str] = None
+    # The per-task progress ticker (report/terminal.py's print_progress()) writes
+    # straight to sys.stdout, bypassing print_fn entirely -- fine for the CLI, but
+    # wrong for the MCP stdio transport (mcp/server.py), where stdout is a live
+    # JSON-RPC stream and a stray progress line would corrupt it. Injectable here
+    # (defaulting to the original stdout-writing behavior, so `tokentrust verify`'s
+    # own output is unchanged) so the MCP server can override it to route to
+    # stderr instead. Mirrors src/verify.ts's VerifyDependencies.printProgress.
+    print_progress: Optional[Callable[[int, int], None]] = None
 
 
 @dataclass
@@ -145,6 +153,7 @@ def run_verify(options: VerifyOptions, deps: Optional[VerifyDependencies] = None
     env = deps.env if deps.env is not None else dict(os.environ)
     live_api_client = deps.live_api_client or anthropic_live_api_client
     store_path = deps.store_path or str(Path(options.repo) / DEFAULT_STORE_PATH)
+    progress_fn = deps.print_progress or print_progress
 
     try:
         tasks = load_task_corpus(options.tasks_path)
@@ -202,7 +211,7 @@ def run_verify(options: VerifyOptions, deps: Optional[VerifyDependencies] = None
 
         claimed = get_claimed_savings(adapter.name)
         try:
-            tt01 = run_tt01(adapter, tasks, claimed.pct, lambda done, total: print_progress(done, total))
+            tt01 = run_tt01(adapter, tasks, claimed.pct, lambda done, total: progress_fn(done, total))
         except ProxyExecutionError as err:
             print_fn(f"Error: {err}")
             return VerifyOutcome(exit_code=1)
@@ -250,7 +259,7 @@ def run_verify(options: VerifyOptions, deps: Optional[VerifyDependencies] = None
             )
 
         try:
-            tt03 = run_tt03(adapter, tasks, lambda done, total: print_progress(done, total))
+            tt03 = run_tt03(adapter, tasks, lambda done, total: progress_fn(done, total))
         except ProxyExecutionError as err:
             print_fn(f"Error: {err}")
             return VerifyOutcome(exit_code=1)

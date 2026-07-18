@@ -8,12 +8,15 @@ so the two distributions are drop-in interchangeable on PATH.
 
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from typing import List, Optional
 
 from .adapters.registry import SUPPORTED_PROXIES, is_supported_proxy
 from .adapters.types import ProxyName
+from .mcp.server import start_mcp_server
+from .mcp.tool_schema import VERIFY_TOOL_NAME
 from .verify import (
     DEFAULT_LIVE_MAX_TASKS_OPTION,
     CliUsageError,
@@ -36,15 +39,46 @@ def print_top_level_usage(print_fn=print) -> None:
                 "",
                 "Usage:",
                 "  tokentrust verify --proxy <name> [options]",
+                "  tokentrust mcp",
                 "",
                 "Commands:",
                 "  verify    Measure a proxy's actual token/cost savings against a labeled task corpus",
                 "            and compare the measurement to the proxy's claimed savings.",
+                "  mcp       Start an MCP (Model Context Protocol) server over stdio, exposing the same",
+                f"            verification engine as a {VERIFY_TOOL_NAME} tool call for any MCP-compatible agent.",
                 "",
-                'Run "tokentrust verify --help" for the full verify flag list.',
+                'Run "tokentrust verify --help" or "tokentrust mcp --help" for the full flag list of each.',
                 "",
                 "Example:",
                 "  tokentrust verify --proxy rtk",
+                "  tokentrust mcp",
+            ]
+        )
+    )
+
+
+def print_mcp_usage(print_fn=print) -> None:
+    print_fn(
+        "\n".join(
+            [
+                "tokentrust mcp -- start an MCP (Model Context Protocol) server over stdio",
+                "",
+                "Usage:",
+                "  tokentrust mcp",
+                "",
+                f"Exposes one tool, {VERIFY_TOOL_NAME}, backed by the exact same verification engine as",
+                "`tokentrust verify` (no duplicated logic). Any MCP-compatible client (Claude Code, Claude",
+                "Desktop, or any other MCP-aware agent) can call it to get the structured JSON verification",
+                "report back directly, without shelling out to this CLI.",
+                "",
+                'No live, provider-billed API calls are made from a tool call unless it explicitly sets both',
+                '"live" and "confirmCost" to true, same safety gate as the CLI\'s --live/--confirm-cost flags.',
+                "",
+                "Register it with an MCP client by pointing the client's server config at this binary with",
+                'the "mcp" argument, e.g. in a Claude Code / Claude Desktop MCP config file:',
+                '  { "mcpServers": { "tokentrust": { "command": "tokentrust", "args": ["mcp"] } } }',
+                "",
+                "-h, --help    Show this help message and exit",
             ]
         )
     )
@@ -208,8 +242,19 @@ def main(argv: Optional[List[str]] = None) -> int:
     subcommand = argv[0] if len(argv) > 0 else None
     rest = argv[1:]
 
+    if subcommand == "mcp":
+        if any(a in _HELP_FLAGS for a in rest):
+            print_mcp_usage()
+            return 0
+        # Blocks serving tool calls until the client disconnects (EOF on stdin) --
+        # same lifecycle as every other stdio-based MCP server.
+        asyncio.run(start_mcp_server())
+        return 0
+
     if subcommand != "verify":
-        sys.stderr.write(f'Unknown command "{subcommand or ""}". Usage: tokentrust verify --proxy <name> [options]\n')
+        sys.stderr.write(
+            f'Unknown command "{subcommand or ""}". Usage: tokentrust verify --proxy <name> [options] | tokentrust mcp\n'
+        )
         return 1
 
     if any(a in _HELP_FLAGS for a in rest):

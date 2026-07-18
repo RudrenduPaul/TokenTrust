@@ -99,6 +99,113 @@ tokentrust verify --proxy <name> [options]
 
 Exit code is `0` when the run completes with no gated failure, non-zero otherwise.
 
+## Agent-native / MCP
+
+`tokentrust-cli` ships in the same dual CLI + MCP-server mode on both distributions: one binary,
+one underlying verification engine (`run_verify()`), and a second, thin front door for agents
+that speak [MCP (Model Context Protocol)](https://modelcontextprotocol.io) instead of a shell.
+`tokentrust mcp` starts an MCP server over stdio, exposing a single tool, `verify_proxy_savings`,
+that calls straight into the same `run_verify()` engine `tokentrust verify` uses -- no
+verification logic is duplicated, and the tool returns the exact structured JSON report
+`--format json` already produces.
+
+```sh
+tokentrust mcp
+```
+
+### Register it with an MCP client
+
+`pip install tokentrust-cli` puts a real `tokentrust` console script on `PATH`, so point the
+client's server config straight at it with the `mcp` argument. For Claude Code, Claude Desktop,
+or any other client that reads an `mcpServers` block:
+
+```json
+{
+  "mcpServers": {
+    "tokentrust": {
+      "command": "tokentrust",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+If you'd rather not install into an environment already on `PATH`, `uvx` or `pipx run` both work
+against the same published package without a separate install step first:
+
+```json
+{
+  "mcpServers": {
+    "tokentrust": {
+      "command": "uvx",
+      "args": ["--from", "tokentrust-cli", "tokentrust", "mcp"]
+    }
+  }
+}
+```
+
+### The tool
+
+| Field | Description |
+|---|---|
+| `verify_proxy_savings` | Tool name. Mirrors `verify`'s flags one-for-one, minus `--format` -- an MCP call is always machine-facing, so the tool always returns the structured JSON report. |
+| `proxy` (required) | A single proxy name (`"rtk"`) or an array (`["rtk", "headroom"]`) to run the TT04 cross-tool comparison in one call. Supported: `rtk`, `headroom`. |
+| `repo` | Same as `--repo`. Defaults to the MCP server process's current working directory. |
+| `tasks` | Same as `--tasks`. Defaults to the bundled task corpus. |
+| `live` / `confirmCost` | Same `--live`/`--confirm-cost` safety gate as the CLI: no live, provider-billed API call is made unless BOTH are explicitly `true` in the same call. Neither has a default of `true`. |
+| `liveMaxTasks` | Same as `--live-max-tasks`. Defaults to 5. |
+
+The wire-level field names (`proxy`, `repo`, `tasks`, `live`, `confirmCost`, `liveMaxTasks`) are
+deliberately camelCase, even though the rest of this Python port uses snake_case internally --
+this is the tool's contract with an MCP client, and it's byte-identical to the npm package's
+`verify_proxy_savings` tool, so a real client sees the same tool regardless of which language's
+server it's talking to. This is the tool's real, unedited `tools/list` schema, captured from a
+running `tokentrust mcp` server (`inputSchema` trimmed of per-field descriptions here for
+length; the live server returns them in full):
+
+```json
+{
+  "name": "verify_proxy_savings",
+  "title": "Verify proxy token/cost savings",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "proxy": { "anyOf": [{ "type": "string", "enum": ["rtk", "headroom"] }, { "type": "array", "items": { "type": "string", "enum": ["rtk", "headroom"] }, "minItems": 1 }] },
+      "repo": { "type": "string" },
+      "tasks": { "type": "string" },
+      "live": { "type": "boolean" },
+      "confirmCost": { "type": "boolean" },
+      "liveMaxTasks": { "type": "integer", "exclusiveMinimum": 0 }
+    },
+    "required": ["proxy"]
+  }
+}
+```
+
+A real `tools/call` against this repo, `{"name": "verify_proxy_savings", "arguments": {"proxy":
+"rtk"}}`, returns the same shape as the CLI's `--format json` output (trimmed here; the live
+call returns the full `records` array with TT01/TT02/TT05 entries):
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"run_id\": \"tt_2026-07-18_b9c042\",\n  \"repo\": \"...\",\n  \"task_corpus_size\": 23,\n  \"proxies\": [\"rtk\"],\n  \"records\": [ /* TT01, TT02, TT05 -- same shape as `verify --format json` */ ],\n  \"tt03\": { \"rtk\": { \"pass\": false, \"regressed_count\": 2, \"task_corpus_size\": 23 } },\n  \"tt05\": { \"rtk\": { \"pass\": true, \"message\": \"No regression vs. last-verified rtk 0.43.0 baseline (stored 2026-07-18).\", \"prior_run_id\": \"tt_2026-07-18_b90a1e\", \"degraded\": false } }\n}"
+    }
+  ],
+  "isError": false
+}
+```
+
+`isError` is `true` (with no report) whenever the underlying `run_verify()` call itself would
+have exited non-zero on the CLI -- a missing proxy binary, an invalid task corpus, or the
+`--live` safety gate refusing an under-confirmed call. Progress output and the trace log
+`tokentrust verify` normally prints to stdout are rerouted to stderr in MCP mode, since stdout is
+the live JSON-RPC wire once a stdio transport is connected -- verified with a real spawned
+`tokentrust mcp` subprocess talking real stdio to a real MCP client session (see
+`python/tests/test_mcp_server.py`).
+
 ## Proxy support (v0.1)
 
 | Proxy | Status |

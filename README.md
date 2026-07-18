@@ -343,7 +343,10 @@ got sharp enough to prove what was already true there.
 wrapper around the Node binary: real Python source under [python/src/tokentrust/](./python/src/tokentrust/),
 its own pytest suite, and the identical bundled 23-task corpus, copied verbatim into the wheel.
 Both distributions run the same `cl100k_base` tokenizer encoding, verified to produce identical
-token counts on real sample text, and both are maintained together going forward. See
+token counts on real sample text, and both are maintained together going forward, including
+`tokentrust mcp`: the Python port exposes the same `verify_proxy_savings` MCP tool, with a
+byte-identical wire schema, as the npm package (see [python/README.md](./python/README.md)'s
+"Agent-native / MCP" section). See
 [python/README.md](./python/README.md) for install instructions, [python/docs/getting-started.md](./python/docs/getting-started.md)
 for a walkthrough, and [python/docs/concepts.md](./python/docs/concepts.md) for the verification
 methodology shared by both packages.

@@ -1,5 +1,7 @@
 """Ported from src/cli.test.ts."""
 
+from unittest.mock import patch
+
 import pytest
 
 from tokentrust.cli import parse_cli_flags, resolve_verify_options
@@ -118,3 +120,28 @@ class TestMain:
         code = main(["verify"])
         assert code == 1
         assert "--proxy is required" in capsys.readouterr().err
+
+    def test_mcp_help_returns_0(self, capsys):
+        from tokentrust.cli import main
+
+        code = main(["mcp", "--help"])
+        assert code == 0
+        out = capsys.readouterr().out
+        assert "tokentrust mcp" in out
+        assert "verify_proxy_savings" in out
+
+    def test_mcp_subcommand_starts_the_mcp_server(self):
+        """
+        `tokentrust mcp` (no --help) hands off to start_mcp_server() via a real
+        asyncio.run() call -- only start_mcp_server() itself is mocked (an AsyncMock, so
+        the real event loop actually awaits it and returns immediately) so the test
+        doesn't bind real stdin/stdout (that's exercised for real, over an in-memory
+        transport, in test_mcp_server.py).
+        """
+        from tokentrust import cli as cli_module
+
+        with patch.object(cli_module, "start_mcp_server") as fake_start:
+            code = cli_module.main(["mcp"])
+
+        assert code == 0
+        fake_start.assert_called_once_with()

@@ -33,6 +33,54 @@ and this project uses [Semantic Versioning](https://semver.org/).
   stdout-writing behavior, so `tokentrust verify`'s own output is unchanged); the MCP server
   overrides it to route to stderr instead.
 
+## [Python 0.3.0] - 2026-07-18
+
+### Added
+
+- **MCP (Model Context Protocol) server mode**, mirroring the npm package's `[0.3.0]` entry
+  above one-for-one: `tokentrust mcp` (the `tokentrust` console script's new subcommand) starts
+  an MCP server over stdio, exposing one tool, `verify_proxy_savings`, so any MCP-compatible
+  agent can call TokenTrust programmatically instead of shelling out to the CLI. The tool's wire
+  schema is byte-identical to the npm package's (`proxy`, `repo`, `tasks`, `live`, `confirmCost`,
+  `liveMaxTasks`, no `format`) so a real MCP client sees the same tool contract from either
+  language's server, even though the field names stay camelCase on the wire while the rest of
+  this port uses snake_case internally. New modules `python/src/tokentrust/mcp/tool_schema.py`
+  (the JSON Schema `inputSchema` plus `normalize_proxy_input()`) and
+  `python/src/tokentrust/mcp/server.py` (`create_tokentrust_mcp_server()`, `start_mcp_server()`)
+  call straight into the existing `run_verify()` engine (`python/src/tokentrust/verify.py`); no
+  verification logic is duplicated. The `--live`/`--confirm-cost` safety gate is enforced
+  identically to the CLI: no live, provider-billed API call is made from a tool call unless both
+  are explicitly `true` in the same call -- covered by a real request/response round trip test
+  (`python/tests/test_mcp_server.py`, using the official MCP Python SDK's in-memory session
+  helper) asserting the injected live API client is never invoked. Built on the official `mcp`
+  PyPI package (the Python counterpart of `@modelcontextprotocol/sdk`), added as a new
+  dependency; `run_verify()` itself is synchronous, so the tool handler offloads it to a worker
+  thread (`anyio.to_thread.run_sync`) instead of blocking the server's event loop.
+- `VerifyDependencies.print_progress` (`python/src/tokentrust/verify.py`): the same fix as the
+  npm package's `VerifyDependencies.printProgress` above, for the same reason. The per-task
+  progress ticker (`report/terminal.py`'s `print_progress()`) previously wrote straight to
+  `sys.stdout`, bypassing the existing `print_fn` dependency entirely -- fine for the CLI, wrong
+  for the new MCP stdio transport, where stdout is the live JSON-RPC wire. Now an injectable
+  dependency (defaulting to the original stdout-writing behavior, so `tokentrust verify`'s own
+  output is unchanged); the MCP server overrides it to route to stderr instead. Verified with a
+  real spawned `tokentrust mcp` subprocess talking real stdio to a real MCP client session: the
+  child's stderr was captured separately from the JSON-RPC stdout stream, confirming the
+  "Measuring..." trace and the printed report only ever appear on stderr.
+
+### Changed
+
+- **`requires-python` raised from `>=3.9` to `>=3.10`** (Python 3.9 support dropped). The `mcp`
+  PyPI package this release depends on requires Python `>=3.10`; every other dependency and this
+  port's own code remain compatible with 3.10 unchanged. `python/pyproject.toml`'s classifiers
+  updated to match (3.9 removed).
+- Dev-only dependency `pytest` raised from `>=7.0,<9` to `>=9.0.3,<10`, per `pip-audit`: `pytest`
+  `<9.0.3` is `CVE-2025-71176` / `GHSA-6w46-j5rx-g56g` (predictable `/tmp/pytest-of-{user}`
+  directory naming on UNIX, local privilege/DoS risk). Dev-only, never shipped inside an
+  installed `tokentrust-cli`, fixed anyway to keep the dependency tree clean of known
+  vulnerabilities. `pytest-cov` (already required by `CONTRIBUTING.md`'s documented
+  `pytest --cov=tokentrust --cov-report=term-missing` command but previously undeclared) added
+  to the `dev` extra.
+
 ## [Python 0.2.1] - 2026-07-16
 
 Docs-only patch release. No source or behavior changes.

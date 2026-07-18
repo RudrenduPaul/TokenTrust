@@ -4,16 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tokentrust-cli"
-version = "0.2.1"
+version = "0.3.0"
 description = "Vendor-neutral CLI that independently verifies the actual token/cost savings delivered by AI-coding-agent context-reduction proxies (rtk, headroom) against a real, labeled task corpus and a local tokenizer."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [
   { name = "Rudrendu Paul" },
   { name = "Sourav Nandy" },
 ]
-keywords = ["token-reduction", "llm-cost", "benchmark", "cli", "ai-coding-agent", "verification", "tokenizer"]
+keywords = ["token-reduction", "llm-cost", "benchmark", "cli", "ai-coding-agent", "verification", "tokenizer", "mcp", "model-context-protocol"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
@@ -21,7 +21,6 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -32,11 +31,17 @@ classifiers = [
 dependencies = [
   "tiktoken>=0.7,<1",
   "PyYAML>=6.0,<7",
+  "mcp>=1.28,<2",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=7.0,<9",
+  # >=9.0.3 required: pytest <9.0.3 is CVE-2025-71176 (GHSA-6w46-j5rx-g56g, predictable
+  # /tmp/pytest-of-{user} directory naming on UNIX) -- dev-only dependency, never shipped
+  # to an installed `tokentrust-cli`, fixed here anyway per this project's no-unfixed-
+  # HIGH/CRITICAL-CVE bar (see CONTRIBUTING.md / pip-audit results in CHANGELOG.md).
+  "pytest>=9.0.3,<10",
+  "pytest-cov>=4.0,<8",
   "build>=1.0,<2",
   "twine>=5.0,<7",
 ]
