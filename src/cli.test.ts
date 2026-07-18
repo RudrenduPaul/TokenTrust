@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { main, parseCliFlags, resolveVerifyOptions } from './cli.js';
+import { describe, expect, it, vi } from 'vitest';
+import { main, parseCliFlags, printMcpUsage, printTopLevelUsage, resolveVerifyOptions } from './cli.js';
 import { CliUsageError } from './verify.js';
+
+// vi.hoisted() so this factory-referenced mock is initialized before vi.mock()'s
+// hoisted call runs (vi.mock itself is hoisted above these imports by vitest).
+const { startMcpServer } = vi.hoisted(() => ({ startMcpServer: vi.fn(async () => undefined) }));
+
+vi.mock('./mcp/server.js', () => ({ startMcpServer }));
 
 describe('parseCliFlags', () => {
   it('parses a single --proxy flag', () => {
@@ -113,3 +119,65 @@ describe(
     });
   },
 );
+
+describe('main() "mcp" subcommand dispatch', () => {
+  it('tokentrust mcp starts the MCP server and exits 0 once it is listening', async () => {
+    startMcpServer.mockClear();
+    const exitCode = await main(['mcp']);
+    expect(exitCode).toBe(0);
+    expect(startMcpServer).toHaveBeenCalledTimes(1);
+  });
+
+  it('tokentrust mcp --help prints usage and exits 0 WITHOUT starting the server', async () => {
+    startMcpServer.mockClear();
+    const printed: string[] = [];
+    const exitCode = await main(['mcp', '--help']);
+    expect(exitCode).toBe(0);
+    expect(startMcpServer).not.toHaveBeenCalled();
+    printMcpUsage((line) => printed.push(line));
+    expect(printed.join('\n')).toContain('tokentrust mcp');
+  });
+
+  it('tokentrust mcp -h also prints usage and exits 0 (short flag)', async () => {
+    startMcpServer.mockClear();
+    const exitCode = await main(['mcp', '-h']);
+    expect(exitCode).toBe(0);
+    expect(startMcpServer).not.toHaveBeenCalled();
+  });
+
+  it('an unknown subcommand still exits 1 and mentions both verify and mcp in the error', async () => {
+    const originalError = console.error;
+    const errors: string[] = [];
+    console.error = (line: string) => errors.push(line);
+    try {
+      const exitCode = await main(['bogus']);
+      expect(exitCode).toBe(1);
+      expect(errors.join('\n')).toContain('tokentrust mcp');
+    } finally {
+      console.error = originalError;
+    }
+  });
+});
+
+describe('printTopLevelUsage', () => {
+  it('documents the mcp subcommand alongside verify', () => {
+    const printed: string[] = [];
+    printTopLevelUsage((line) => printed.push(line));
+    const text = printed.join('\n');
+    expect(text).toContain('tokentrust mcp');
+    expect(text).toContain('verify_proxy_savings');
+  });
+});
+
+describe('printMcpUsage', () => {
+  it('documents a real MCP client config JSON snippet using npx tokentrust-cli mcp', () => {
+    const printed: string[] = [];
+    printMcpUsage((line) => printed.push(line));
+    const text = printed.join('\n');
+    expect(text).toContain('mcpServers');
+    expect(text).toContain('"command": "npx"');
+    expect(text).toContain('tokentrust-cli');
+    expect(text).toContain('--live');
+    expect(text).toContain('--confirm-cost');
+  });
+});

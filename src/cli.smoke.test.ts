@@ -56,7 +56,11 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
     } else {
       expect(exitCode).toBe(1);
     }
-  });
+    // Real subprocess spawn of the rtk binary against the full bundled corpus
+    // (23 tasks, one rtk invocation per task) -- past the vitest default
+    // 5000ms test timeout under parallel test-file load. 15s gives it real
+    // headroom without masking an actual hang.
+  }, 15_000);
 
   it('prints a usage error and exits 1 when --proxy is omitted', () => {
     let stderr = '';
@@ -117,6 +121,25 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
     expect(exitCode).toBe(0);
     expect(stdout).toContain('tokentrust');
     expect(stdout).toContain('verify');
+    expect(stderr).not.toContain('ERR_PARSE_ARGS_UNKNOWN_OPTION');
+  });
+
+  it('runs `node dist/cli.js mcp --help` and prints MCP usage, exiting 0 without hanging on stdin (real subprocess -- proves the compiled mcp subcommand wiring, not just the unit-tested dispatch)', () => {
+    let stdout = '';
+    let stderr = '';
+    let exitCode = 0;
+    try {
+      stdout = execFileSync(process.execPath, [distCliPath, 'mcp', '--help'], { encoding: 'utf8', timeout: 10_000 });
+    } catch (err) {
+      const e = err as { status: number; stdout: string; stderr: string };
+      exitCode = e.status;
+      stdout = e.stdout;
+      stderr = e.stderr;
+    }
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('tokentrust mcp');
+    expect(stdout).toContain('verify_proxy_savings');
     expect(stderr).not.toContain('ERR_PARSE_ARGS_UNKNOWN_OPTION');
   });
 

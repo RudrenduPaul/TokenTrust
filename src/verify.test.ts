@@ -75,6 +75,30 @@ describe('runVerify', () => {
     // a newly added proxy).
   });
 
+  describe(
+    'printProgress injection (regression -- report/terminal.ts printProgress() writes straight to ' +
+      'process.stdout, bypassing the print() dependency entirely; a stdio-transport caller like the MCP ' +
+      'server needs to redirect this too, not just print())',
+    () => {
+      it('deps.printProgress, when supplied, is called instead of the process.stdout default', async () => {
+        const progressCalls: Array<{ done: number; total: number }> = [];
+        const outcome = await runVerify(
+          baseOptions(),
+          baseDeps({ printProgress: (done, total) => progressCalls.push({ done, total }) }),
+        );
+
+        expect(outcome.exitCode).toBe(0);
+        expect(progressCalls.length).toBeGreaterThan(0);
+        expect(progressCalls[progressCalls.length - 1]).toEqual({ done: 23, total: 23 });
+      });
+
+      it('omitting deps.printProgress does not throw (falls back to the real terminal printProgress)', async () => {
+        const outcome = await runVerify(baseOptions(), baseDeps());
+        expect(outcome.exitCode).toBe(0);
+      });
+    },
+  );
+
   describe('CRITICAL: missing-binary error path', () => {
     it('exits 1 and prints the locked verbatim message when the proxy is not installed, makes no report', async () => {
       const adapter = new FakeAdapter('rtk', { baseline: () => '', compressed: () => '' });

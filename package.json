@@ -1,6 +1,6 @@
 {
   "name": "tokentrust-cli",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Vendor-neutral CLI that independently verifies the actual token/cost savings delivered by AI-coding-agent context-reduction proxies (rtk, headroom) against a real, labeled task corpus and a local tokenizer.",
   "type": "module",
   "main": "./dist/index.js",
@@ -46,8 +46,10 @@
   },
   "homepage": "https://github.com/RudrenduPaul/TokenTrust-CLI#readme",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "js-tiktoken": "^1.0.21",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

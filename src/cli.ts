@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { isSupportedProxy, SUPPORTED_PROXIES } from './adapters/registry.js';
 import type { ProxyName } from './adapters/types.js';
+import { startMcpServer } from './mcp/server.js';
+import { VERIFY_TOOL_NAME } from './mcp/tool-schema.js';
 import { DEFAULT_LIVE_MAX_TASKS_OPTION, CliUsageError, resolveDefaultTasksPath, runVerify } from './verify.js';
 import type { VerifyOptions } from './verify.js';
 
@@ -23,15 +25,44 @@ export function printTopLevelUsage(print: (line: string) => void = (line) => con
       '',
       'Usage:',
       '  tokentrust verify --proxy <name> [options]',
+      '  tokentrust mcp',
       '',
       'Commands:',
       '  verify    Measure a proxy\'s actual token/cost savings against a labeled task corpus',
       '            and compare the measurement to the proxy\'s claimed savings.',
+      '  mcp       Start an MCP (Model Context Protocol) server over stdio, exposing the same',
+      `            verification engine as a ${VERIFY_TOOL_NAME} tool call for any MCP-compatible agent.`,
       '',
-      'Run "tokentrust verify --help" for the full verify flag list.',
+      'Run "tokentrust verify --help" or "tokentrust mcp --help" for the full flag list of each.',
       '',
       'Example:',
       '  tokentrust verify --proxy rtk',
+      '  npx tokentrust-cli mcp',
+    ].join('\n'),
+  );
+}
+
+export function printMcpUsage(print: (line: string) => void = (line) => console.log(line)): void {
+  print(
+    [
+      'tokentrust mcp -- start an MCP (Model Context Protocol) server over stdio',
+      '',
+      'Usage:',
+      '  tokentrust mcp',
+      '',
+      `Exposes one tool, ${VERIFY_TOOL_NAME}, backed by the exact same verification engine as`,
+      '`tokentrust verify` (no duplicated logic). Any MCP-compatible client (Claude Code, Claude',
+      'Desktop, or any other MCP-aware agent) can call it to get the structured JSON verification',
+      'report back directly, without shelling out to this CLI.',
+      '',
+      'No live, provider-billed API calls are made from a tool call unless it explicitly sets both',
+      '"live" and "confirmCost" to true, same safety gate as the CLI\'s --live/--confirm-cost flags.',
+      '',
+      'Register it with an MCP client by pointing the client\'s server config at this binary with',
+      'the "mcp" argument, e.g. in a Claude Code / Claude Desktop MCP config file:',
+      '  { "mcpServers": { "tokentrust": { "command": "npx", "args": ["tokentrust-cli", "mcp"] } } }',
+      '',
+      '-h, --help    Show this help message and exit',
     ].join('\n'),
   );
 }
@@ -150,9 +181,21 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
 
   const [subcommand, ...rest] = argv;
 
+  if (subcommand === 'mcp') {
+    if (rest.some((arg) => HELP_FLAGS.has(arg))) {
+      printMcpUsage();
+      return 0;
+    }
+    // Resolves once the stdio transport is listening; the process then stays
+    // alive on its open stdin handle to serve tool calls, same lifecycle as
+    // every other stdio-based MCP server.
+    await startMcpServer();
+    return 0;
+  }
+
   if (subcommand !== 'verify') {
     console.error(
-      `Unknown command "${subcommand ?? ''}". Usage: tokentrust verify --proxy <name> [options]`,
+      `Unknown command "${subcommand ?? ''}". Usage: tokentrust verify --proxy <name> [options] | tokentrust mcp`,
     );
     return 1;
   }

@@ -86,6 +86,7 @@ your machine with no clone required.
 - [Why this exists](#why-this-exists)
 - [What it measures](#what-it-measures)
 - [Commands](#commands)
+- [Agent-native / MCP](#agent-native--mcp)
 - [Proxy support](#proxy-support-v01)
 - [How it compares](#how-it-compares)
 - [What is TokenTrust, and why does it exist](#what-is-tokentrust-and-why-does-it-exist)
@@ -170,6 +171,92 @@ automatically whenever a proxy's version bumps:
     proxy: rtk
     fail-on-regression: 'true'
 ```
+
+## Agent-native / MCP
+
+TokenTrust ships in the same dual CLI + MCP-server mode as Semgrep, Trivy, Snyk, and
+SonarQube: one binary, one underlying verification engine, and a second, thin front door for
+agents that speak [MCP (Model Context Protocol)](https://modelcontextprotocol.io) instead of a
+shell. `tokentrust mcp` starts an MCP server over stdio, exposing a single tool,
+`verify_proxy_savings`, that calls straight into the same `runVerify()` engine `tokentrust
+verify` uses -- no verification logic is duplicated, and the tool returns the exact structured
+JSON report `--format json` already produces.
+
+```sh
+npx tokentrust-cli mcp
+```
+
+### Register it with an MCP client
+
+Point the client's server config at this binary with the `mcp` argument. For Claude Code,
+Claude Desktop, or any other client that reads an `mcpServers` block:
+
+```json
+{
+  "mcpServers": {
+    "tokentrust": {
+      "command": "npx",
+      "args": ["tokentrust-cli", "mcp"]
+    }
+  }
+}
+```
+
+### The tool
+
+| Field | Description |
+|---|---|
+| `verify_proxy_savings` | Tool name. Mirrors `verify`'s flags one-for-one, minus `--format` -- an MCP call is always machine-facing, so the tool always returns the structured JSON report. |
+| `proxy` (required) | A single proxy name (`"rtk"`) or an array (`["rtk", "headroom"]`) to run the TT04 cross-tool comparison in one call. Supported: `rtk`, `headroom`. |
+| `repo` | Same as `--repo`. Defaults to the MCP server process's current working directory. |
+| `tasks` | Same as `--tasks`. Defaults to the bundled task corpus. |
+| `live` / `confirmCost` | Same `--live`/`--confirm-cost` safety gate as the CLI: no live, provider-billed API call is made unless BOTH are explicitly `true` in the same call. Neither has a default of `true`. |
+| `liveMaxTasks` | Same as `--live-max-tasks`. Defaults to 5. |
+
+This is the tool's real, unedited `tools/list` schema, captured from a running `tokentrust mcp`
+server (`inputSchema` trimmed of per-field descriptions here for length; the live server returns
+them in full):
+
+```json
+{
+  "name": "verify_proxy_savings",
+  "title": "Verify proxy token/cost savings",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "proxy": { "anyOf": [{ "type": "string", "enum": ["rtk", "headroom"] }, { "type": "array", "items": { "type": "string", "enum": ["rtk", "headroom"] }, "minItems": 1 }] },
+      "repo": { "type": "string" },
+      "tasks": { "type": "string" },
+      "live": { "type": "boolean" },
+      "confirmCost": { "type": "boolean" },
+      "liveMaxTasks": { "type": "integer", "exclusiveMinimum": 0 }
+    },
+    "required": ["proxy"]
+  }
+}
+```
+
+A real `tools/call` against this repo, `{"name": "verify_proxy_savings", "arguments": {"proxy":
+"rtk"}}`, returns the same shape as the CLI's `--format json` output (trimmed here; the live
+call returns the full `records` array with TT01/TT02/TT05 entries):
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"run_id\": \"tt_2026-07-18_f88644\",\n  \"repo\": \"...\",\n  \"task_corpus_size\": 23,\n  \"proxies\": [\"rtk\"],\n  \"records\": [ /* TT01, TT02, TT05 -- same shape as `verify --format json` */ ],\n  \"tt03\": { \"rtk\": { \"pass\": false, \"regressed_count\": 2, \"task_corpus_size\": 23 } },\n  \"tt05\": { \"rtk\": { \"pass\": true, \"message\": \"No regression vs. last-verified rtk 0.43.0 baseline (stored 2026-07-18).\", \"prior_run_id\": \"tt_2026-07-18_608b74\", \"degraded\": false } }\n}"
+    }
+  ],
+  "isError": false
+}
+```
+
+`isError` is `true` (with no report) whenever the underlying `runVerify()` call itself would
+have exited non-zero on the CLI -- a missing proxy binary, an invalid task corpus, or the
+`--live` safety gate refusing an under-confirmed call. Progress output and the trace log
+`tokentrust verify` normally prints to stdout are rerouted to stderr in MCP mode, since stdout
+is the live JSON-RPC wire once a stdio transport is connected.
 
 ## Proxy support (v0.1)
 

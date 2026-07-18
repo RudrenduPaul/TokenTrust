@@ -8,6 +8,31 @@ corpus, entries note which distribution they apply to.
 The format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-07-18
+
+### Added
+
+- **MCP (Model Context Protocol) server mode.** `tokentrust mcp` starts an MCP server over
+  stdio, exposing one tool, `verify_proxy_savings`, so any MCP-compatible agent (Claude Code,
+  Claude Desktop, or any other MCP client) can call TokenTrust programmatically instead of
+  shelling out to the CLI and parsing terminal output. The tool's input mirrors `verify`'s flags
+  one-for-one (`proxy`, `repo`, `tasks`, `live`, `confirmCost`, `liveMaxTasks`) minus `--format`
+  -- an MCP tool call is always machine-facing, so the tool always returns the same structured
+  JSON report `tokentrust verify --format json` already produces. New module
+  `src/mcp/server.ts` calls straight into the existing `runVerify()` engine (`src/verify.ts`);
+  no verification logic is duplicated. The `--live`/`--confirm-cost` safety gate is enforced
+  identically to the CLI: no live, provider-billed API call is made from a tool call unless both
+  are explicitly set to `true` in the same call. Added `@modelcontextprotocol/sdk` and `zod` as
+  dependencies. Same dual CLI + MCP-server pattern already shipped by Semgrep, Trivy, Snyk, and
+  SonarQube: one binary, one underlying engine, a thin additional transport.
+- `VerifyDependencies.printProgress` (`src/verify.ts`): the per-task progress ticker
+  (`report/terminal.ts`'s `printProgress()`) previously wrote straight to `process.stdout`,
+  bypassing the existing `print()` dependency entirely. That's fine for the CLI, but wrong for
+  the new MCP stdio transport, where stdout is a live JSON-RPC stream and a stray progress line
+  would corrupt it. This is now an injectable dependency (defaulting to the original
+  stdout-writing behavior, so `tokentrust verify`'s own output is unchanged); the MCP server
+  overrides it to route to stderr instead.
+
 ## [Python 0.2.1] - 2026-07-16
 
 Docs-only patch release. No source or behavior changes.

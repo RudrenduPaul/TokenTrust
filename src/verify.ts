@@ -71,6 +71,15 @@ export interface VerifyDependencies {
   print?: (line: string) => void;
   env?: NodeJS.ProcessEnv;
   reportOutPath?: string;
+  /**
+   * Defaults to report/terminal.ts's printProgress(), which writes straight
+   * to process.stdout -- correct for the CLI, but wrong for any transport
+   * (e.g. the MCP stdio server) where stdout IS a machine-readable
+   * protocol stream and a stray progress line would corrupt it. Overriding
+   * this is how such a transport keeps that stream clean without
+   * reimplementing TT01/TT03's progress callback wiring.
+   */
+  printProgress?: (done: number, total: number) => void;
 }
 
 export interface VerifyOutcome {
@@ -117,6 +126,7 @@ export async function runVerify(options: VerifyOptions, deps: VerifyDependencies
   const env = deps.env ?? process.env;
   const liveApiClient = deps.liveApiClient ?? anthropicLiveApiClient;
   const storePath = deps.storePath ?? resolve(options.repo, DEFAULT_STORE_PATH);
+  const reportProgress = deps.printProgress ?? printProgress;
 
   let tasks;
   try {
@@ -186,7 +196,7 @@ export async function runVerify(options: VerifyOptions, deps: VerifyDependencies
     const claimed = getClaimedSavings(adapter.name);
     let tt01: Tt01Result;
     try {
-      tt01 = await runTt01(adapter, tasks, claimed.pct, (done, total) => printProgress(done, total));
+      tt01 = await runTt01(adapter, tasks, claimed.pct, (done, total) => reportProgress(done, total));
     } catch (err) {
       if (err instanceof ProxyExecutionError) {
         print(`Error: ${err.message}`);
@@ -241,7 +251,7 @@ export async function runVerify(options: VerifyOptions, deps: VerifyDependencies
 
     let tt03: Awaited<ReturnType<typeof runTt03>>;
     try {
-      tt03 = await runTt03(adapter, tasks, (done, total) => printProgress(done, total));
+      tt03 = await runTt03(adapter, tasks, (done, total) => reportProgress(done, total));
     } catch (err) {
       if (err instanceof ProxyExecutionError) {
         print(`Error: ${err.message}`);
