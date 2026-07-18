@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync, writeFileSync, mkdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -41,7 +41,11 @@ tasks:
     difficulty: easy
 `);
     const tasks = loadTaskCorpus(path);
-    expect(tasks[0]!.fixtureRepoAbsolutePath).toBe(join(dir, 'repos', 'my-task'));
+    // loadTaskCorpus() returns the realpathSync()-resolved path (defense-in-depth symlink
+    // re-confinement), so the expected side must go through the same resolution -- on macOS,
+    // tmpdir() itself lives under a symlink (/var -> /private/var), so a lexical, unresolved
+    // join(dir, ...) would never match.
+    expect(tasks[0]!.fixtureRepoAbsolutePath).toBe(realpathSync(join(dir, 'repos', 'my-task')));
   });
 
   it('rejects a corpus missing the version field', () => {
