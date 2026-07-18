@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve, relative, sep } from 'node:path';
 import { parse } from 'yaml';
 import type { RtkFilter, Task, TaskCorpus, TaskDefinition } from './types.js';
@@ -86,9 +86,15 @@ export function loadTaskCorpus(corpusPath: string): Task[] {
     }
 
     const fixtureRepoAbsolutePath = resolve(corpusDir, task.fixture_repo);
-    const relativeFromCorpusDir = relative(corpusDir, fixtureRepoAbsolutePath);
+    const lexicalRelativeFromCorpusDir = relative(corpusDir, fixtureRepoAbsolutePath);
 
-    if (relativeFromCorpusDir === '..' || relativeFromCorpusDir.startsWith(`..${sep}`) || isAbsolute(relativeFromCorpusDir)) {
+    // Fast lexical check first (matches pre-existing behavior/error message
+    // for the common case, and doesn't require the path to exist).
+    if (
+      lexicalRelativeFromCorpusDir === '..' ||
+      lexicalRelativeFromCorpusDir.startsWith(`..${sep}`) ||
+      isAbsolute(lexicalRelativeFromCorpusDir)
+    ) {
       throw new TaskSchemaError(
         `Task "${task.id}" in "${absoluteCorpusPath}" has a fixture_repo path ` +
           `("${task.fixture_repo}") that escapes the corpus file's own directory ` +
@@ -103,7 +109,32 @@ export function loadTaskCorpus(corpusPath: string): Task[] {
       );
     }
 
-    return { ...task, fixtureRepoAbsolutePath };
+    // Defense-in-depth: re-confine against the REAL, symlink-resolved
+    // paths, not just the lexical ones. path.resolve()/path.relative()
+    // never touch the filesystem, so a fixture_repo entry that is (or
+    // contains) a symlink pointing outside corpusDir would otherwise pass
+    // the lexical check above while still reading from wherever the
+    // symlink actually points (e.g. ~/.ssh) -- a directory-confinement
+    // bypass for a tasks.yml from an untrusted source. realpathSync forces
+    // both sides through the same symlink resolution before comparing.
+    const realCorpusDir = realpathSync(corpusDir);
+    const realFixtureRepoPath = realpathSync(fixtureRepoAbsolutePath);
+    const realRelativeFromCorpusDir = relative(realCorpusDir, realFixtureRepoPath);
+
+    if (
+      realRelativeFromCorpusDir === '..' ||
+      realRelativeFromCorpusDir.startsWith(`..${sep}`) ||
+      isAbsolute(realRelativeFromCorpusDir)
+    ) {
+      throw new TaskSchemaError(
+        `Task "${task.id}" in "${absoluteCorpusPath}" has a fixture_repo path ` +
+          `("${task.fixture_repo}") that escapes the corpus file's own directory ` +
+          `("${corpusDir}") once symlinks are resolved -- fixture_repo must stay within the ` +
+          `directory the tasks.yml file lives in.`,
+      );
+    }
+
+    return { ...task, fixtureRepoAbsolutePath: realFixtureRepoPath };
   });
 }
 

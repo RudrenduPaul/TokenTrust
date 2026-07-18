@@ -36,6 +36,14 @@ inputs:
     description: 'Node.js version to use for running the tokentrust CLI.'
     required: false
     default: '20'
+  cli-version:
+    description: >-
+      Exact tokentrust-cli npm version to run. Pinned rather than "latest" --
+      a compromised npm publish would otherwise reach every workflow using
+      this Action on its very next run, with no Action-tag/version bump
+      required to trigger it. Bump this deliberately alongside new releases.
+    required: false
+    default: '0.1.2'
 
 outputs:
   report-path:
@@ -61,6 +69,7 @@ runs:
         TT_TASKS: ${{ inputs.tasks }}
         TT_REPO: ${{ inputs.repo }}
         TT_FAIL_ON_REGRESSION: ${{ inputs.fail-on-regression }}
+        TT_CLI_VERSION: ${{ inputs.cli-version }}
       run: |
         set -euo pipefail
 
@@ -75,7 +84,7 @@ runs:
         fi
 
         set +e
-        OUTPUT=$(npx --yes tokentrust-cli verify "${PROXY_ARGS[@]}" --repo "$TT_REPO" "${TASKS_ARGS[@]}" --format json)
+        OUTPUT=$(npx --yes "tokentrust-cli@$TT_CLI_VERSION" verify "${PROXY_ARGS[@]}" --repo "$TT_REPO" "${TASKS_ARGS[@]}" --format json)
         VERIFY_EXIT_CODE=$?
         set -e
 

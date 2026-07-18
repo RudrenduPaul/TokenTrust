@@ -3,6 +3,7 @@ import type { LiveApiCall, LiveApiClient } from './tt02_cost_delta.js';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 const LIVE_MODEL = 'claude-3-5-haiku-latest';
+const LIVE_API_TIMEOUT_MS = 30_000;
 
 /**
  * Default --live API client: sends a single minimal message so the
@@ -29,6 +30,7 @@ export const anthropicLiveApiClient: LiveApiClient = async (
       max_tokens: 1,
       messages: [{ role: 'user', content: contextText }],
     }),
+    signal: AbortSignal.timeout(LIVE_API_TIMEOUT_MS),
   });
 
   if (!response.ok) {

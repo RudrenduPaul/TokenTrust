@@ -11,6 +11,7 @@ from .tt02_cost_delta import LiveApiCall
 _ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 _ANTHROPIC_VERSION = "2023-06-01"
 _LIVE_MODEL = "claude-3-5-haiku-latest"
+_LIVE_API_TIMEOUT_SECONDS = 30.0
 
 
 def anthropic_live_api_client(task_id: str, context_text: str, api_key: str) -> LiveApiCall:
@@ -46,7 +47,7 @@ def anthropic_live_api_client(task_id: str, context_text: str, api_key: str) -> 
     )
 
     try:
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, timeout=_LIVE_API_TIMEOUT_SECONDS) as response:
             data = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as err:
         error_body = err.read().decode("utf-8", errors="replace")

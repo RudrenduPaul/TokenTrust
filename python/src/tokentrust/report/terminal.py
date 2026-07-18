@@ -9,6 +9,17 @@ from typing import List, Optional
 from ..adapters.types import ProxyName
 
 
+def _sanitize_for_terminal(value: str) -> str:
+    """
+    Strips ANSI escape sequences and other C0/DEL control characters from a
+    string before it's interpolated into terminal output. Task ids come
+    from a task corpus, which may be downloaded from an untrusted source --
+    without this, a crafted id could hide text, spoof a status line, or
+    reposition the cursor on the terminal it's printed to.
+    """
+    return "".join(ch for ch in value if ord(ch) >= 0x20 and ord(ch) != 0x7F)
+
+
 def render_progress(done: int, total: int) -> str:
     """
     Locked progress-indicator format: a silent 30-45s pause during
@@ -103,8 +114,8 @@ def render_terminal_report(input: TerminalReportInput) -> str:
             f"reduction across {t.task_corpus_size} tasks"
         )
         lines.append(
-            f"  Range: {t.min_task['pct']:.1f}% (task: \"{t.min_task['id']}\") to "
-            f"{t.max_task['pct']:.1f}% (task: \"{t.max_task['id']}\")"
+            f"  Range: {t.min_task['pct']:.1f}% (task: \"{_sanitize_for_terminal(t.min_task['id'])}\") to "
+            f"{t.max_task['pct']:.1f}% (task: \"{_sanitize_for_terminal(t.max_task['id'])}\")"
         )
         lines.append("")
 

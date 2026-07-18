@@ -75,10 +75,10 @@ describe('compiled CLI entry point (subprocess smoke test)', () => {
   it(
     'runs `node dist/cli.js verify --help` and prints clean usage, exiting 0 -- regression for a bug found ' +
       'during manual end-to-end testing of the compiled CLI, where this threw an unhandled ' +
-      'ERR_PARSE_ARGS_UNKNOWN_OPTION Node stack trace instead of printing ' +
-      "usage, because node:util's parseArgs() is strict by default and --help was never declared in its " +
-      'options schema. Only a real subprocess invocation exercises this -- unit tests calling parseCliFlags() ' +
-      'or main() directly never go through the compiled binary the way a user actually invokes it.',
+      "ERR_PARSE_ARGS_UNKNOWN_OPTION Node stack trace instead of printing usage, because node:util's " +
+      "parseArgs() is strict by default and --help was never declared in its options schema. Only a real " +
+      'subprocess invocation exercises this -- unit tests calling parseCliFlags() or main() directly never ' +
+      'go through the compiled binary the way a user actually invokes it.',
     () => {
       let stdout = '';
       let stderr = '';
