@@ -1,13 +1,6 @@
 <div align="center">
 
-<!-- TODO: record a real terminal demo GIF and drop it here.
-     Capture script (run for real, on camera, no fabricated output):
-       1. `npx tokentrust-cli verify --proxy rtk` -- let the full 23-task run play out,
-          keep the [MEASURED] TT01/TT02 lines and the final summary line on screen.
-       2. Target 15-20 seconds, terminal width 100 cols, asciinema or a plain screen
-          recording converted to GIF. Save as `docs/demo.gif` and reference it below
-          with descriptive alt text once it exists. -->
-<!-- <img src="docs/demo.gif" alt="Terminal recording of tokentrust verify --proxy rtk printing claimed vs. measured token and cost savings for rtk 0.43.0 across a 23-task corpus" width="640"> -->
+<img src="docs/demo.gif" alt="Terminal recording of npm install -g tokentrust-cli followed by tokentrust verify --proxy rtk, printing claimed vs. measured token and cost savings for rtk 0.43.0 across the bundled 23-task corpus" width="640">
 
 # TokenTrust
 
@@ -90,9 +83,9 @@ your machine with no clone required.
 - [Proxy support](#proxy-support-v01)
 - [How it compares](#how-it-compares)
 - [What is TokenTrust, and why does it exist](#what-is-tokentrust-and-why-does-it-exist)
-- [FAQ](#faq)
 - [Real-world validation](#real-world-validation)
 - [Python package](#python-package)
+- [FAQ](#faq)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -185,6 +178,8 @@ JSON report `--format json` already produces.
 ```sh
 npx tokentrust-cli mcp
 ```
+
+<img src="docs/usage.gif" alt="Terminal recording of tokentrust mcp --help, showing the MCP server usage text and the verify_proxy_savings tool description" width="640">
 
 ### Register it with an MCP client
 
@@ -292,37 +287,6 @@ currently self-report their own savings numbers, and there is no independent, re
 CI-native way to check one before adopting it. TokenTrust is not a proxy itself and does not
 compress anything. It verifies proxies that do.
 
-## FAQ
-
-**How does TokenTrust decide a savings number is trustworthy?**
-It doesn't decide trust for you. It runs the proxy against a fixed, labeled task corpus, measures
-the real token delta with a local tokenizer, and prints that measured number next to the number
-the proxy's own README claims. What you do with the gap is up to you.
-
-**Does TokenTrust modify my code or my proxy's compressed output?**
-No. It runs the proxy as a real subprocess against fixture tasks, captures the output, and
-measures it. Nothing in your repo or the proxy's configuration is changed.
-
-**What happens if a proxy regresses output quality to hit a bigger compression number?**
-That's what TT03 (Never-Worse Output Guard) checks: whether the compressed output dropped
-content a task marked as required to survive compression. On the current 23-task corpus, TT03
-fails on 2 tasks (`refactor-extract-service`, `add-retry-wrapper-feature`), both pre-existing and
-tracked openly rather than hidden from the summary.
-
-**Can TokenTrust verify a proxy's live, provider-billed cost instead of an estimate?**
-Yes, with `--live --confirm-cost`, capped at 5 tasks by default via `--live-max-tasks`. It uses
-your own API key and never runs a real charge without printing the estimated spend first.
-
-**Does TokenTrust support more than one proxy?**
-`rtk` is fully supported today. `headroom` is a recognized flag value but not yet drivable, since
-it's an HTTP proxy server rather than a one-shot CLI. Passing `--proxy` more than once runs TT04's
-cross-tool comparison across whichever proxies are supported.
-
-**Is the 23-task corpus statistically representative of every codebase?**
-No, and the CLI says so on every run: it's a directional measurement across a fixed corpus, not a
-statistically powered claim across all repos and workloads. A TT05 pass means no regression was
-detected on this run, not a guarantee across all possible future tasks.
-
 ## Real-world validation
 
 TokenTrust's own validation work has already fed back into a real, independently tracked GitHub
@@ -350,6 +314,56 @@ byte-identical wire schema, as the npm package (see [python/README.md](./python/
 [python/README.md](./python/README.md) for install instructions, [python/docs/getting-started.md](./python/docs/getting-started.md)
 for a walkthrough, and [python/docs/concepts.md](./python/docs/concepts.md) for the verification
 methodology shared by both packages.
+
+## FAQ
+
+**What is TokenTrust, and how is it different from a context-reduction proxy like rtk or headroom?**
+TokenTrust is not a proxy itself and does not compress anything. It is a vendor-neutral
+verification layer: it runs a proxy like `rtk` or `headroom` as a real subprocess against a
+fixed, labeled 23-task corpus, measures the actual token and dollar savings with a local
+tokenizer, and prints that measured number next to the number the proxy's own README claims. The
+differentiator is independence: TokenTrust has no stake in whether a proxy's claimed number holds
+up, so it never averages the gap away.
+
+**Which platforms does TokenTrust run on, and are the npm and PyPI packages the same tool?**
+Both are genuine, separately maintained ports of the same tool, not one wrapping the other.
+`npm install -g tokentrust-cli` (or `npx tokentrust-cli`) installs the Node.js build; `pip install
+tokentrust-cli` installs a real Python port under
+[python/src/tokentrust/](./python/src/tokentrust/), with its own pytest suite. Both expose the
+same `tokentrust` command, the same TT01-TT05 categories, the same bundled task corpus, and the
+same `cl100k_base` tokenizer encoding.
+
+**Does TokenTrust work with AI agents directly, not just from a shell?**
+Yes. `tokentrust mcp` (or `npx tokentrust-cli mcp`) starts an MCP (Model Context Protocol) server
+over stdio that exposes one tool, `verify_proxy_savings`, backed by the same `runVerify()` engine
+the CLI uses. Any MCP-compatible client, including Claude Code and Claude Desktop, can call that
+tool and get back the same structured JSON report `--format json` produces on the command line.
+
+**How does TokenTrust compare to tokbench, the other independent proxy benchmark?**
+[tokbench](https://github.com/Entelligentsia/tokbench) is real prior art and deserves credit: a
+rigorous, disclosed pilot with raw transcripts and a pre-registered protocol. Its current scope is
+narrower than a first read suggests, one repository, one task, N=1 per arm, with replication in
+progress. TokenTrust instead runs a 23-task corpus continuously, in your own CI, on your own repo,
+every time a proxy version bumps, rather than as a single published pilot report.
+
+**What if `pip install tokentrust-cli` fails on my Python version?**
+The PyPI package declares `requires-python = ">=3.10"` in its `pyproject.toml`, so `pip` will
+refuse to install it on Python 3.9 or older. Upgrade to Python 3.10, 3.11, 3.12, or 3.13 (the
+versions the package is tested against), or use the npm package instead, which only requires
+Node.js 18 or newer.
+
+**Can I use TokenTrust commercially, and do I need to attribute it?**
+Yes. TokenTrust is licensed Apache-2.0 (see [LICENSE](./LICENSE)), which permits commercial use,
+modification, and distribution, including inside closed-source products, as long as you keep the
+license and copyright notice and note any changes you made to the source itself.
+
+**Does TokenTrust modify my code or my proxy's compressed output?**
+No. It runs the proxy as a real subprocess against fixture tasks, captures the output, and
+measures it. Nothing in your repo or the proxy's configuration is changed.
+
+**Can TokenTrust verify a proxy's live, provider-billed cost instead of an estimate?**
+Yes, with `--live --confirm-cost`, capped at 5 tasks by default via `--live-max-tasks`. It uses
+your own API key and never runs a real charge without printing the estimated spend first.
 
 ## Contributing
 
