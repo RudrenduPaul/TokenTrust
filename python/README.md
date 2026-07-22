@@ -206,6 +206,20 @@ the live JSON-RPC wire once a stdio transport is connected -- verified with a re
 `tokentrust mcp` subprocess talking real stdio to a real MCP client session (see
 `python/tests/test_mcp_server.py`).
 
+## How it compares
+
+| | What it does | Ongoing / self-serve | Verifies a specific claim |
+|---|---|---|---|
+| **TokenTrust** | Runs a named proxy against a labeled task corpus, measures real compression, cost, and output-quality regression, prints claimed vs. measured | Yes, runs in your own CI, on your own repo, every time a proxy version bumps | Yes, that's the whole point |
+| [tokbench](https://github.com/Entelligentsia/tokbench) | Independent pilot benchmark of rtk and headroom on one real agentic SDLC task, with raw transcripts and a pre-registered protocol | No, a single-repo, N=1 pilot report, replication in progress | Yes, and rigorously: credit where it's due |
+| [Langfuse](https://github.com/langfuse/langfuse), Vantage, Finout, Amnic, Revenium | LLM/AI cost observability and FinOps. Track your actual API spend across models and providers, allocate it across teams | Yes, hosted or self-hosted, ongoing | No, these track what you spent; they don't check whether a specific proxy's specific savings claim holds up |
+
+[tokbench](https://github.com/Entelligentsia/tokbench) is the closest prior art and deserves real
+credit, though its pilot scope is narrower than a first read suggests: one repository, one task,
+N=1 per arm, replication runs in progress. See the [project README's "How it
+compares"](https://github.com/RudrenduPaul/TokenTrust-CLI#how-it-compares) for the full writeup,
+including tokbench's own published numbers.
+
 ## Proxy support (v0.1)
 
 | Proxy | Status |
@@ -293,6 +307,37 @@ an SBOM, and has no OpenSSF Scorecard badge set up, for either distribution. CI 
 automated dependency-audit step wired into CI for the Python package yet, its dependencies are
 pinned to bounded version ranges (`tiktoken>=0.7,<1`, `PyYAML>=6.0,<7`) in
 [pyproject.toml](./pyproject.toml) instead.
+
+## FAQ
+
+**What is TokenTrust, and how is it different from a context-reduction proxy like rtk or headroom?**
+TokenTrust is not a proxy itself and does not compress anything. It is a vendor-neutral
+verification layer: it runs a proxy like `rtk` or `headroom` as a real subprocess against a
+fixed, labeled 23-task corpus, measures the actual token and dollar savings with a local
+tokenizer, and prints that measured number next to the number the proxy's own README claims.
+
+**Is this Python package a wrapper around the npm/Node.js version?**
+No. This is a genuine, independently maintained Python port under
+[python/src/tokentrust/](./src/tokentrust/), with its own pytest suite, not a subprocess wrapper
+around the Node CLI. Both distributions expose the same `tokentrust` command, the same TT01-TT05
+verification categories, the same bundled 23-task corpus, and the same `cl100k_base` tokenizer
+encoding, verified to produce identical token counts on real sample text.
+
+**Do I need my own API keys to run TokenTrust?**
+Only if you use `--live --confirm-cost` to verify TT02's cost estimate against a real,
+provider-billed sample. That key is read only from the `TOKENTRUST_LIVE_API_KEY` environment
+variable, never accepted as a CLI flag, and used for nothing but the capped, explicitly-confirmed
+`--live` sample. Without `--live`, TokenTrust makes no billed API calls at all.
+
+**Is it safe to run against my own repo and proxy binaries?**
+Yes. TokenTrust shells out to the `rtk`/`headroom` binaries as unprivileged child processes via
+`subprocess.run` with an argument list (never `shell=True`), so proxy output and fixture content
+can't reach a shell, and it never modifies your repo or the proxy's compressed output.
+
+**Does TokenTrust work with AI agents directly, not just from a shell?**
+Yes. `tokentrust mcp` starts an MCP (Model Context Protocol) server over stdio exposing one tool,
+`verify_proxy_savings`, backed by the same `run_verify()` engine the CLI uses — see the
+["Agent-native / MCP"](#agent-native--mcp) section above.
 
 ## Development
 
